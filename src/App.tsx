@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useDraws } from './hooks/useDraws'
-import { analyzeDraws } from './utils/analysis'
+import { analyzeDraws, analyzePositions, getTopPicks } from './utils/analysis'
 import {
   PlusCircle, Trash2, TrendingUp, Star, BarChart3,
   ChevronDown, ChevronUp, Loader2, Flame, Snowflake,
@@ -176,7 +176,9 @@ export default function App() {
   const [showForm, setShowForm]       = useState(false)
   const [expandedPred, setExpandedPred] = useState<number | null>(0)
 
-  const analysis = useMemo(() => analyzeDraws(draws), [draws])
+  const analysis  = useMemo(() => analyzeDraws(draws), [draws])
+  const positions = useMemo(() => analyzePositions(draws), [draws])
+  const topPicks  = useMemo(() => getTopPicks(draws), [draws])
 
   const handleSubmit = async () => {
     if (formNumbers.length !== 5) { setFormError('Selecciona exactamente 5 números'); return }
@@ -405,6 +407,45 @@ export default function App() {
                   </div>
                 </div>
               )}
+              {/* Frecuencia por posición */}
+              <div style={S.card}>
+                <p style={{ ...S.section as any }}>Frecuencia por posición</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {positions.numbers.map(pos => (
+                    <div key={pos.position}>
+                      <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 7, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+                        Posición {pos.position}
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        {pos.top.map(({ n, pct }: { n: number, pct: number }) => (
+                          <div key={n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 9, color: 'var(--blue)', fontFamily: "'Space Mono',monospace", fontWeight: 700 }}>{pct}%</span>
+                            <Ball n={n} size="sm" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                    <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Estrellas por posición</p>
+                    <div style={{ display: 'flex', gap: 24 }}>
+                      {positions.stars.map(pos => (
+                        <div key={pos.position}>
+                          <p style={{ fontSize: 9, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 7 }}>Posición {pos.position}</p>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                            {pos.top.map(({ n, pct }: { n: number, pct: number }) => (
+                              <div key={n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                <span style={{ fontSize: 9, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", fontWeight: 700 }}>{pct}%</span>
+                                <Ball n={n} type="star" size="sm" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>}
           </div>
         )}
@@ -418,6 +459,26 @@ export default function App() {
                 <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Mínimo 3 sorteos para predecir</p>
               </div>
             ) : <>
+              {/* Top Picks */}
+              {topPicks.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 4 }}>
+                  <p style={{ fontSize: 11, color: 'var(--t2)', fontFamily: "'Space Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>⭐ Top 3 combinaciones sugeridas</p>
+                  {topPicks.map((pick, i) => (
+                    <div key={i} style={{ padding: '14px 16px', borderRadius: 14, background: i === 0 ? 'rgba(91,127,255,0.08)' : 'var(--bg3)', border: i === 0 ? '1px solid rgba(91,127,255,0.3)' : '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)' }}>{pick.label}</p>
+                        <span style={{ fontSize: 10, fontFamily: "'Space Mono',monospace", color: i === 0 ? 'var(--blue)' : 'var(--t3)', fontWeight: 700 }}>score {pick.score}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                        {pick.numbers.map((n: number) => <Ball key={n} n={n} size="md" />)}
+                        <span style={{ color: 'var(--t3)', margin: '0 4px', fontSize: 16 }}>·</span>
+                        {pick.stars.map((n: number) => <Ball key={n} n={n} type="star" size="md" />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 9, background: 'rgba(240,180,41,0.06)', border: '1px solid rgba(240,180,41,0.12)' }}>
                 <AlertTriangle size={12} color="var(--gold)" style={{ flexShrink: 0 }} />
                 <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", lineHeight: 1.6 }}>
