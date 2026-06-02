@@ -305,6 +305,10 @@ export function analyzeDraws(draws: Draw[]): AnalysisResult {
   const averageGap = gaps.length ? gaps.reduce((s, g) => s + g, 0) / gaps.length : 0
 
   const predictions: Prediction[] = draws.length >= 3 ? [
+    consensusStrategy(draws),
+    weightedStrategy(draws),
+    markovStrategy(draws),
+    streakStrategy(draws),
     hotStrategy(draws),
     coldStrategy(draws),
     balanceStrategy(draws),
@@ -396,4 +400,188 @@ export function getTopPicks(draws: Draw[]): TopPick[] {
     { label: '⚖️ Combinación equilibrada',  numbers: mixSorted.sort((a,b) => a-b),     stars: hotStars,         score: 72 },
     { label: '📍 Por posición histórica',   numbers: posNumsUnique.slice(0,5),          stars: posStarsUnique.slice(0,2), score: 68 },
   ]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TÉCNICAS AVANZADAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── 1. Ventana deslizante con peso exponencial ────────────────────────────────
+// Los sorteos recientes pesan exponencialmente más que los antiguos.
+// λ = factor de decaimiento: 0.98 = decae lento, 0.90 = decae rápido.
+function weightedFrequency(draws: Draw[], lambda = 0.97): FrequencyMap {
+  const freq: FrequencyMap = {}
+  const sorted = [...draws].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+  sorted.forEach((draw, i) => {
+    const weight = Math.pow(lambda, i)  // sorteos más recientes = i pequeño = peso mayor
+    draw.numbers.forEach(n => { freq[n] = (freq[n] || 0) + weight })
+  })
+  return freq
+}
+
+function weightedStarFrequency(draws: Draw[], lambda = 0.97): FrequencyMap {
+  const freq: FrequencyMap = {}
+  const sorted = [...draws].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+  sorted.forEach((draw, i) => {
+    const weight = Math.pow(lambda, i)
+    draw.stars.forEach(n => { freq[n] = (freq[n] || 0) + weight })
+  })
+  return freq
+}
+
+export function weightedStrategy(draws: Draw[]): Prediction {
+  const numFreq = weightedFrequency(draws)
+  const starFreq = weightedStarFrequency(draws)
+  const numbers = pickUnique(sortByFreq(numFreq), 5, 50)
+  const stars   = pickUnique(sortByFreq(starFreq), 2, 12)
+  const recent10 = draws.slice(0, 10).flatMap(d => d.numbers)
+  const recentFreq = frequency(recent10)
+  const top3recent = sortByFreq(recentFreq).slice(0, 3).join(', ')
+  return {
+    strategy: '📉 Tendencia Reciente Ponderada',
+    description: 'Ponderación exponencial: los últimos sorteos valen mucho más que los históricos lejanos (λ=0.97).',
+    numbers, stars,
+    confidence: 66,
+    reasoning: `Con decaimiento exponencial λ=0.97, cada sorteo pasado vale el 97% del siguiente. Los más activos en los últimos 10 sorteos: ${top3recent}. Esta técnica reduce el "ruido" histórico y enfoca en tendencias vigentes.`
+  }
+}
+
+// ─── 2. Cadenas de Markov (transición entre sorteos consecutivos) ──────────────
+// Para cada número, calcula qué otros números aparecen más en el sorteo SIGUIENTE.
+// Si X salió hoy, ¿qué sale mañana con más frecuencia?
+function buildMarkovMatrix(draws: Draw[]): { [from: number]: FrequencyMap } {
+  const matrix: { [from: number]: FrequencyMap } = {}
+  const sorted = [...draws].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i].numbers
+    const next    = sorted[i + 1].numbers
+    for (const c of current) {
+      if (!matrix[c]) matrix[c] = {}
+      for (const n of next) {
+        matrix[c][n] = (matrix[c][n] || 0) + 1
+      }
+    }
+  }
+  return matrix
+}
+
+export function markovStrategy(draws: Draw[]): Prediction {
+  if (draws.length < 10) {
+    return hotStrategy(draws)  // fallback con pocos datos
+  }
+  const sorted = [...draws].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+  const lastDraw  = sorted[0]
+  const matrix    = buildMarkovMatrix(draws)
+  const starFreq  = weightedStarFrequency(draws)
+
+  // Para cada número del último sorteo, suma los votos de sus sucesores históricos
+  const votes: FrequencyMap = {}
+  for (const n of lastDraw.numbers) {
+    const transitions = matrix[n] || {}
+    for (const [next, count] of Object.entries(transitions)) {
+      const k = Number(next)
+      if (!lastDraw.numbers.includes(k)) {  // que no repita del último sorteo
+        votes[k] = (votes[k] || 0) + count
+      }
+    }
+  }
+
+  // Completar con ponderación si faltan candidatos
+  const weighted = weightedFrequency(draws)
+  const candidates = sortByFreq(Object.keys(votes).length >= 5 ? votes : weighted)
+  const numbers = pickUnique(candidates, 5, 50)
+  const stars   = pickUnique(sortByFreq(starFreq), 2, 12)
+  const lastNums = lastDraw.numbers.join(', ')
+
+  return {
+    strategy: '🔗 Cadenas de Markov',
+    description: 'Analiza transiciones entre sorteos consecutivos: dado lo que salió last draw, ¿qué suele salir después?',
+    numbers, stars,
+    confidence: 61,
+    reasoning: `Último sorteo: [${lastNums}]. La matriz de Markov rastreó ${draws.length - 1} transiciones consecutivas y calculó qué números siguen históricamente a cada uno de esos valores. No predice — describe la correlación temporal más frecuente.`
+  }
+}
+
+// ─── 3. Análisis de rachas (streak analysis) ──────────────────────────────────
+// Detecta números en racha caliente RECIENTE vs su media histórica.
+// Score = (frecuencia últimos 20) / (frecuencia esperada global) — ratio de activación.
+export function streakStrategy(draws: Draw[]): Prediction {
+  const window   = Math.min(20, draws.length)
+  const sorted   = [...draws].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+  const recent   = sorted.slice(0, window)
+  const all      = sorted
+
+  const recentFreq = frequency(recent.flatMap(d => d.numbers))
+  const globalFreq = frequency(all.flatMap(d => d.numbers))
+  const totalRecent = window * 5
+  const totalGlobal = all.length * 5
+  // ratio de referencia: totalRecent / totalGlobal
+
+  // Ratio de activación: cuánto más activo de lo normal en los últimos 20 sorteos
+  const activation: FrequencyMap = {}
+  for (let n = 1; n <= 50; n++) {
+    const rF = (recentFreq[n] || 0) / totalRecent
+    const gF = (globalFreq[n] || 0) / totalGlobal || 0.02
+    activation[n] = rF / gF
+  }
+
+  const starRecent = frequency(recent.flatMap(d => d.stars))
+  const starGlobal = frequency(all.flatMap(d => d.stars))
+  const starActivation: FrequencyMap = {}
+  for (let n = 1; n <= 12; n++) {
+    const rF = (starRecent[n] || 0) / (window * 2)
+    const gF = (starGlobal[n] || 0) / (all.length * 2) || 0.04
+    starActivation[n] = rF / gF
+  }
+
+  const numbers = pickUnique(sortByFreq(activation), 5, 50)
+  const stars   = pickUnique(sortByFreq(starActivation), 2, 12)
+  const top3 = sortByFreq(activation).slice(0, 3)
+  const ratios = top3.map(n => `${n}(×${activation[n].toFixed(1)})`).join(', ')
+
+  return {
+    strategy: '⚡ Análisis de Rachas',
+    description: `Ratio de activación: frecuencia en últimos ${window} sorteos vs media histórica global. Detecta números "en forma" ahora.`,
+    numbers, stars,
+    confidence: 63,
+    reasoning: `Números con mayor activación reciente vs histórica: ${ratios}. Un ratio >1 significa que sale más de lo esperado estadísticamente en este período. Diferente al hot/cold simple que no pondera por tiempo.`
+  }
+}
+
+// ─── 4. Consenso multi-estrategia ─────────────────────────────────────────────
+// Combina votos de todas las estrategias avanzadas. El número que más estrategias
+// eligen gana. Es el más "robusto" estadísticamente.
+export function consensusStrategy(draws: Draw[]): Prediction {
+  const strategies = [
+    weightedStrategy(draws),
+    markovStrategy(draws),
+    streakStrategy(draws),
+  ]
+
+  const votes: FrequencyMap = {}
+  const starVotes: FrequencyMap = {}
+
+  for (const pred of strategies) {
+    pred.numbers.forEach(n => { votes[n] = (votes[n] || 0) + 1 })
+    pred.stars.forEach(n   => { starVotes[n] = (starVotes[n] || 0) + 1 })
+  }
+
+  // Desempate con ponderación
+  const weighted = weightedFrequency(draws)
+  for (let n = 1; n <= 50; n++) {
+    votes[n] = (votes[n] || 0) + (weighted[n] || 0) * 0.01
+  }
+
+  const numbers = pickUnique(sortByFreq(votes), 5, 50)
+  const stars   = pickUnique(sortByFreq(starVotes), 2, 12)
+  const agreements = numbers.map(n => `${n}(${Math.round(votes[n])} voto${votes[n] !== 1 ? 's' : ''})`).join(', ')
+
+  return {
+    strategy: '🧠 Consenso Multi-Estrategia',
+    description: 'Combina Markov + Rachas + Ponderación. Los números elegidos por más estrategias simultáneamente.',
+    numbers, stars,
+    confidence: 70,
+    reasoning: `Votos acumulados por número: ${agreements}. Este es el enfoque más robusto — no depende de una sola técnica sino del acuerdo entre varias metodologías independientes.`
+  }
 }
