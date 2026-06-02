@@ -23,7 +23,7 @@ export function useDraws() {
       setDraws(data)
       setLoading(false)
     }, (err) => {
-      console.error('[LuckLab] Error Firebase:', err.code, err.message)
+      console.error('[LuckLab] Error Firebase:', err.message)
       setError(err.message)
       setLoading(false)
     })
@@ -41,7 +41,7 @@ export function useDraws() {
       })
       console.log('[LuckLab] Sorteo guardado OK')
     } catch (err: any) {
-      console.error('[LuckLab] Error al guardar:', err.code, err.message)
+      console.error('[LuckLab] Error al guardar:', err.message)
       setError(err.message)
       throw err
     }

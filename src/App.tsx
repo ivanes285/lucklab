@@ -1,34 +1,30 @@
 import { useState, useMemo } from 'react'
 import { useDraws } from './hooks/useDraws'
 import { analyzeDraws } from './utils/analysis'
-import { Draw } from './types'
 import {
   PlusCircle, Trash2, TrendingUp, Star, BarChart3,
   ChevronDown, ChevronUp, Loader2, Flame, Snowflake,
   Trophy, AlertTriangle, X
 } from 'lucide-react'
 
-// ─── Ball ────────────────────────────────────────────────────────────────────
-function Ball({ n, type = 'number', size = 'md', pulse = false }: {
-  n: number, type?: 'number' | 'star', size?: 'sm' | 'md' | 'lg', pulse?: boolean
+// ─── Ball ─────────────────────────────────────────────────────────────────────
+function Ball({ n, type = 'number', size = 'md' }: {
+  n: number, type?: 'number' | 'star', size?: 'sm' | 'md' | 'lg'
 }) {
-  const sz = { sm: { w: 34, fs: 11 }, md: { w: 42, fs: 14 }, lg: { w: 52, fs: 17 } }[size]
+  const dim = { sm: 32, md: 42, lg: 52 }[size]
+  const fs  = { sm: 11, md: 14, lg: 17 }[size]
   const isStar = type === 'star'
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: sz.w, height: sz.w, borderRadius: '50%',
-      fontSize: sz.fs, fontFamily: "'Space Mono', monospace", fontWeight: 700,
-      background: isStar
-        ? 'linear-gradient(135deg, #F5C842, #E8A820)'
-        : 'linear-gradient(135deg, #4F6EF7, #3451D1)',
-      color: isStar ? '#3A2800' : '#fff',
-      boxShadow: isStar
-        ? '0 2px 12px rgba(245,200,66,0.45), inset 0 1px 0 rgba(255,255,255,0.3)'
-        : '0 2px 12px rgba(79,110,247,0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
-      flexShrink: 0,
-      animation: pulse ? 'pulse-ring 2s infinite' : undefined,
+      width: dim, height: dim, borderRadius: '50%', flexShrink: 0,
+      fontSize: fs, fontFamily: "'Space Mono',monospace", fontWeight: 700,
       userSelect: 'none',
+      background: isStar ? 'var(--gold)' : 'var(--blue)',
+      color: isStar ? '#1a0e00' : '#fff',
+      boxShadow: isStar
+        ? '0 2px 8px rgba(240,180,41,0.35)'
+        : '0 2px 8px rgba(91,127,255,0.35)',
     }}>
       {n < 10 ? `0${n}` : n}
     </span>
@@ -46,39 +42,29 @@ function NumberPicker({ max, count, selected, onChange, label }: {
   }
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <p style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: "'Space Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</p>
-        <span style={{ fontSize: 11, color: isStar ? 'var(--gold)' : 'var(--blue)', fontFamily: "'Space Mono', monospace" }}>{selected.length}/{count}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 11, color: 'var(--t2)', fontFamily: "'Space Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+        <span style={{ fontSize: 11, fontFamily: "'Space Mono',monospace", color: isStar ? 'var(--gold)' : 'var(--blue)', fontWeight: 700 }}>{selected.length}/{count}</span>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {Array.from({ length: max }, (_, i) => i + 1).map(n => {
           const sel = selected.includes(n)
           const disabled = !sel && selected.length >= count
           return (
             <button key={n} onClick={() => toggle(n)} disabled={disabled} style={{
-              width: 36, height: 36, borderRadius: '50%', border: 'none',
-              fontSize: 11, fontFamily: "'Space Mono', monospace", fontWeight: 700,
+              width: 34, height: 34, borderRadius: '50%', border: 'none',
+              fontSize: 11, fontFamily: "'Space Mono',monospace", fontWeight: 700,
               cursor: disabled ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s ease',
-              transform: sel ? 'scale(1.12)' : 'scale(1)',
+              transition: 'all 0.12s',
+              transform: sel ? 'scale(1.15)' : 'scale(1)',
               background: sel
-                ? isStar
-                  ? 'linear-gradient(135deg, #F5C842, #E8A820)'
-                  : 'linear-gradient(135deg, #4F6EF7, #3451D1)'
-                : disabled
-                  ? 'rgba(255,255,255,0.03)'
-                  : 'rgba(255,255,255,0.07)',
+                ? isStar ? 'var(--gold)' : 'var(--blue)'
+                : disabled ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
               color: sel
-                ? isStar ? '#3A2800' : '#fff'
-                : disabled ? 'var(--text-3)' : 'var(--text-2)',
-              boxShadow: sel
-                ? isStar
-                  ? '0 2px 10px rgba(245,200,66,0.4)'
-                  : '0 2px 10px rgba(79,110,247,0.4)'
-                : 'none',
-            }}>
-              {n < 10 ? `0${n}` : n}
-            </button>
+                ? isStar ? '#1a0e00' : '#fff'
+                : disabled ? 'var(--t3)' : 'var(--t2)',
+              boxShadow: sel ? (isStar ? '0 2px 8px rgba(240,180,41,0.4)' : '0 2px 8px rgba(91,127,255,0.4)') : 'none',
+            }}>{n < 10 ? `0${n}` : n}</button>
           )
         })}
       </div>
@@ -87,140 +73,71 @@ function NumberPicker({ max, count, selected, onChange, label }: {
 }
 
 // ─── DrawCard ─────────────────────────────────────────────────────────────────
-function DrawCard({ draw, onDelete, index }: { draw: Draw, onDelete: () => void, index: number }) {
+function DrawCard({ draw, onDelete, index }: { draw: any, onDelete: () => void, index: number }) {
   return (
-    <div className="fade-up" style={{
-      animationDelay: `${index * 0.04}s`,
-      display: 'flex', alignItems: 'center', gap: 14,
-      padding: '12px 16px', borderRadius: 14,
-      background: 'var(--surface2)',
-      border: '1px solid var(--border)',
+    <div className="fu" style={{
+      animationDelay: `${index * 0.03}s`,
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '10px 14px', borderRadius: 12,
+      background: 'var(--bg3)', border: '1px solid var(--border)',
       transition: 'border-color 0.2s, background 0.2s',
-      position: 'relative', overflow: 'hidden',
     }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-hover)'
-      ;(e.currentTarget as HTMLDivElement).style.background = 'var(--surface3)'
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'
-      ;(e.currentTarget as HTMLDivElement).style.background = 'var(--surface2)'
-    }}>
-      {/* Date */}
-      <div style={{ minWidth: 80 }}>
-        <p style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", letterSpacing: '0.04em' }}>
-          {draw.date}
-        </p>
-        {draw.jackpot && (
-          <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono', monospace", marginTop: 2 }}>
-            {draw.jackpot}
-          </p>
-        )}
+    onMouseEnter={e => { const d = e.currentTarget as HTMLElement; d.style.borderColor = 'var(--border2)'; d.style.background = 'var(--bg4)' }}
+    onMouseLeave={e => { const d = e.currentTarget as HTMLElement; d.style.borderColor = 'var(--border)'; d.style.background = 'var(--bg3)' }}>
+      <div style={{ minWidth: 76 }}>
+        <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>{draw.date}</p>
+        {draw.jackpot && <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", marginTop: 2 }}>{draw.jackpot}</p>}
       </div>
-
-      {/* Balls */}
-      <div style={{ display: 'flex', gap: 5, alignItems: 'center', flex: 1, flexWrap: 'wrap' }}>
-        {draw.numbers.map(n => <Ball key={n} n={n} size="sm" />)}
-        <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>·</span>
-        {draw.stars.map(n => <Ball key={n} n={n} type="star" size="sm" />)}
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1, flexWrap: 'wrap' }}>
+        {draw.numbers.map((n: number) => <Ball key={n} n={n} size="sm" />)}
+        <span style={{ color: 'var(--t3)', margin: '0 3px', fontSize: 16 }}>·</span>
+        {draw.stars.map((n: number) => <Ball key={n} n={n} type="star" size="sm" />)}
       </div>
-
-      {/* Delete */}
-      <button onClick={onDelete} style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        color: 'var(--text-3)', padding: 4, borderRadius: 6,
-        transition: 'color 0.15s', opacity: 0.6,
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'; (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-3)'; (e.currentTarget as HTMLButtonElement).style.opacity = '0.6' }}>
+      <button onClick={onDelete} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 4, borderRadius: 6, transition: 'color 0.15s' }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--t3)'}>
         <Trash2 size={13} />
       </button>
     </div>
   )
 }
 
-// ─── StatCard ─────────────────────────────────────────────────────────────────
-function StatCard({ label, value, accent }: { label: string, value: string | number, accent?: string }) {
-  return (
-    <div style={{
-      padding: '20px 18px', borderRadius: 16,
-      background: 'var(--surface2)', border: '1px solid var(--border)',
-      textAlign: 'center'
-    }}>
-      <p style={{ fontSize: 28, fontWeight: 800, color: accent || 'var(--blue)', lineHeight: 1 }}>{value}</p>
-      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-    </div>
-  )
-}
-
-// ─── PredictionCard ───────────────────────────────────────────────────────────
-function PredictionCard({ pred, index, expanded, onToggle }: {
-  pred: any, index: number, expanded: boolean, onToggle: () => void
-}) {
+// ─── PredCard ─────────────────────────────────────────────────────────────────
+function PredCard({ pred, index, expanded, onToggle }: { pred: any, index: number, expanded: boolean, onToggle: () => void }) {
   const emoji = pred.strategy.split(' ')[0]
-  const name = pred.strategy.slice(pred.strategy.indexOf(' ') + 1)
-  const confColor = pred.confidence >= 58 ? 'var(--green)' : pred.confidence >= 50 ? 'var(--gold)' : 'var(--text-3)'
-
+  const name  = pred.strategy.slice(pred.strategy.indexOf(' ') + 1)
+  const conf  = pred.confidence
+  const confColor = conf >= 58 ? 'var(--green)' : conf >= 50 ? 'var(--gold)' : 'var(--t3)'
   return (
-    <div className="fade-up" style={{
-      animationDelay: `${index * 0.05}s`,
-      borderRadius: 16,
-      background: expanded ? 'var(--surface3)' : 'var(--surface2)',
-      border: `1px solid ${expanded ? 'rgba(79,110,247,0.3)' : 'var(--border)'}`,
-      overflow: 'hidden', transition: 'all 0.25s ease',
-    }}>
-      <button onClick={onToggle} style={{
-        width: '100%', display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', padding: '14px 18px',
-        background: 'none', border: 'none', cursor: 'pointer', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
-          <div style={{ textAlign: 'left', minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>{name}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-              <div style={{ height: 4, width: 80, background: 'var(--surface4)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', width: `${pred.confidence}%`,
-                  background: confColor, borderRadius: 4,
-                  transition: 'width 0.6s ease',
-                }} />
+    <div className="fu" style={{ animationDelay: `${index * 0.04}s`, borderRadius: 14, overflow: 'hidden', border: `1px solid ${expanded ? 'rgba(91,127,255,0.25)' : 'var(--border)'}`, background: expanded ? 'var(--bg4)' : 'var(--bg3)', transition: 'all 0.2s' }}>
+      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 20 }}>{emoji}</span>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', margin: 0 }}>{name}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4 }}>
+              <div style={{ height: 3, width: 72, background: 'var(--bg5)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${conf}%`, background: confColor, borderRadius: 3, transition: 'width 0.5s' }} />
               </div>
-              <span style={{ fontSize: 11, color: confColor, fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{pred.confidence}%</span>
+              <span style={{ fontSize: 10, color: confColor, fontFamily: "'Space Mono',monospace", fontWeight: 700 }}>{conf}%</span>
             </div>
           </div>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {pred.numbers.map((n: number) => <Ball key={n} n={n} size="sm" />)}
-          </div>
-          <span style={{ color: 'var(--text-3)' }}>{expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 3 }}>{pred.numbers.map((n: number) => <Ball key={n} n={n} size="sm" />)}</div>
+          <span style={{ color: 'var(--t3)' }}>{expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</span>
         </div>
       </button>
-
       {expanded && (
-        <div style={{
-          padding: '16px 18px 18px',
-          borderTop: '1px solid var(--border)',
-          animation: 'fadeUp 0.25s ease both',
-        }}>
-          <p style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 14 }}>{pred.description}</p>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-            {pred.numbers.map((n: number) => <Ball key={n} n={n} size="md" pulse />)}
-            <span style={{ color: 'var(--text-3)', margin: '0 6px', fontSize: 20 }}>·</span>
+        <div style={{ padding: '14px 16px 16px', borderTop: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 12, color: 'var(--t2)', marginBottom: 12 }}>{pred.description}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+            {pred.numbers.map((n: number) => <Ball key={n} n={n} size="md" />)}
+            <span style={{ color: 'var(--t3)', margin: '0 5px', fontSize: 18 }}>·</span>
             {pred.stars.map((n: number) => <Ball key={n} n={n} type="star" size="md" />)}
           </div>
-
-          <div style={{
-            padding: '12px 14px', borderRadius: 10,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid var(--border)',
-          }}>
-            <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7, fontFamily: "'Space Mono', monospace" }}>
-              {pred.reasoning}
-            </p>
+          <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 11, color: 'var(--t2)', fontFamily: "'Space Mono',monospace", lineHeight: 1.7 }}>{pred.reasoning}</p>
           </div>
         </div>
       )}
@@ -228,357 +145,292 @@ function PredictionCard({ pred, index, expanded, onToggle }: {
   )
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ─── Logo SVG ─────────────────────────────────────────────────────────────────
+function Logo() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="36" height="36" rx="10" fill="#12152A"/>
+      <rect width="36" height="36" rx="10" fill="url(#lg)" opacity="0.6"/>
+      <circle cx="18" cy="18" r="11" stroke="#5B7FFF" strokeWidth="1.5" opacity="0.5"/>
+      <circle cx="18" cy="18" r="7" fill="#5B7FFF"/>
+      <text x="18" y="22" textAnchor="middle" fill="#F0B429" fontSize="9" fontWeight="900" fontFamily="monospace">★</text>
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#5B7FFF" stopOpacity="0.3"/>
+          <stop offset="1" stopColor="#F0B429" stopOpacity="0.1"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  )
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { draws, loading, error, addDraw, deleteDraw } = useDraws()
   const [tab, setTab] = useState<'draws' | 'analysis' | 'predictions'>('draws')
   const [formNumbers, setFormNumbers] = useState<number[]>([])
-  const [formStars, setFormStars] = useState<number[]>([])
+  const [formStars, setFormStars]     = useState<number[]>([])
   const [formJackpot, setFormJackpot] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [formError, setFormError] = useState('')
-  const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting]   = useState(false)
+  const [formError, setFormError]     = useState('')
+  const [showForm, setShowForm]       = useState(false)
   const [expandedPred, setExpandedPred] = useState<number | null>(0)
 
   const analysis = useMemo(() => analyzeDraws(draws), [draws])
 
   const handleSubmit = async () => {
     if (formNumbers.length !== 5) { setFormError('Selecciona exactamente 5 números'); return }
-    if (formStars.length !== 2) { setFormError('Selecciona exactamente 2 estrellas'); return }
-    setFormError('')
-    setSubmitting(true)
+    if (formStars.length !== 2)   { setFormError('Selecciona exactamente 2 estrellas'); return }
+    setFormError(''); setSubmitting(true)
     try {
-      await addDraw({ numbers: formNumbers, stars: formStars, jackpot: formJackpot || undefined })
-      setFormNumbers([]); setFormStars([]); setFormJackpot('')
-      setShowForm(false)
-    } catch {
-      setFormError('Error guardando. Revisa tu configuración de Firebase.')
-    } finally {
-      setSubmitting(false)
-    }
+      await addDraw({ numbers: formNumbers, stars: formStars, jackpot: formJackpot || '' })
+      setFormNumbers([]); setFormStars([]); setFormJackpot(''); setShowForm(false)
+    } catch { setFormError('Error guardando en Firebase.') }
+    finally  { setSubmitting(false) }
   }
 
   const tabs = [
-    { id: 'draws', label: 'Sorteos', icon: <Trophy size={15} /> },
-    { id: 'analysis', label: 'Análisis', icon: <BarChart3 size={15} /> },
-    { id: 'predictions', label: 'Predicciones', icon: <TrendingUp size={15} /> },
+    { id: 'draws',       label: 'Sorteos',     icon: <Trophy size={14} /> },
+    { id: 'analysis',    label: 'Análisis',    icon: <BarChart3 size={14} /> },
+    { id: 'predictions', label: 'Predicciones',icon: <TrendingUp size={14} /> },
   ] as const
 
+  const S: Record<string, React.CSSProperties> = {
+    card:    { padding: '16px', borderRadius: 14, background: 'var(--bg3)', border: '1px solid var(--border)' },
+    label:   { fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", textTransform: 'uppercase' as const, letterSpacing: '0.08em', display: 'block', marginBottom: 6 },
+    section: { fontSize: 12, fontWeight: 600, color: 'var(--t2)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 },
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
-      {/* ── Hero Header ── */}
-      <div style={{
-        background: 'linear-gradient(180deg, #0B0D1F 0%, var(--surface) 100%)',
-        borderBottom: '1px solid var(--border)',
-        paddingBottom: 0,
-        position: 'sticky', top: 0, zIndex: 20,
-        backdropFilter: 'blur(20px)',
-      }}>
-        <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 20px' }}>
-
-          {/* Top bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Logo */}
-              <div style={{
-                width: 38, height: 38, borderRadius: 10,
-                background: 'linear-gradient(135deg, #4F6EF7, #F5C842)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, boxShadow: '0 4px 16px rgba(79,110,247,0.3)',
-              }}>🎯</div>
+      {/* ── Header ── */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(7,8,15,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 12px' }}>
+            {/* Brand */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Logo />
               <div>
-                <h1 style={{ fontSize: 20, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>
-                  <span style={{ color: 'var(--blue)' }}>Lucky</span>
-                  <span style={{ color: 'var(--gold)' }}>Lab</span>
+                <h1 style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                  <span style={{ color: 'var(--blue)' }}>Lucky</span><span style={{ color: 'var(--gold)' }}>Lab</span>
                 </h1>
-                <p style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", marginTop: 2 }}>
-                  {draws.length} sorteo{draws.length !== 1 ? 's' : ''} · euromillones
+                <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginTop: 1 }}>
+                  {draws.length} sorteo{draws.length !== 1 ? 's' : ''} registrados
                 </p>
               </div>
             </div>
-
+            {/* CTA */}
             <button onClick={() => setShowForm(!showForm)} style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '9px 16px', borderRadius: 10,
-              background: showForm ? 'var(--surface4)' : 'linear-gradient(135deg, #4F6EF7, #3451D1)',
-              border: showForm ? '1px solid var(--border)' : 'none',
-              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              boxShadow: showForm ? 'none' : '0 4px 16px rgba(79,110,247,0.35)',
-              transition: 'all 0.2s ease',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+              borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              background: showForm ? 'var(--bg5)' : 'var(--blue)',
+              color: '#fff', transition: 'all 0.2s',
+              boxShadow: showForm ? 'none' : '0 3px 14px rgba(91,127,255,0.4)',
             }}>
-              {showForm ? <X size={14} /> : <PlusCircle size={14} />}
-              {showForm ? 'Cerrar' : 'Agregar sorteo'}
+              {showForm ? <><X size={13} />Cerrar</> : <><PlusCircle size={13} />Agregar</>}
             </button>
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ display: 'flex', gap: 2, marginBottom: -1 }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '9px 16px', borderRadius: '8px 8px 0 0',
-                background: tab === t.id ? 'var(--surface2)' : 'none',
+                display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+                background: tab === t.id ? 'var(--bg3)' : 'none',
                 border: tab === t.id ? '1px solid var(--border)' : '1px solid transparent',
-                borderBottom: tab === t.id ? '1px solid var(--surface2)' : '1px solid transparent',
-                color: tab === t.id ? 'var(--text-1)' : 'var(--text-3)',
-                fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-                cursor: 'pointer', transition: 'all 0.15s ease',
-                marginBottom: -1,
+                borderBottom: tab === t.id ? `1px solid var(--bg3)` : '1px solid transparent',
+                borderRadius: '8px 8px 0 0', color: tab === t.id ? 'var(--t1)' : 'var(--t3)',
+                fontSize: 12, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s',
               }}>
-                {t.icon}{t.label}
+                {t.icon} {t.label}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ── Main Content ── */}
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── Content ── */}
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-        {/* Firebase error */}
+        {/* Error */}
         {error && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '14px 16px', borderRadius: 12,
-            background: 'rgba(240,92,92,0.1)', border: '1px solid rgba(240,92,92,0.25)',
-            color: 'var(--red)', fontSize: 13,
-          }}>
-            <AlertTriangle size={16} />
+          <div style={{ display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 10, background: 'rgba(255,92,92,0.08)', border: '1px solid rgba(255,92,92,0.2)', color: 'var(--red)', fontSize: 13 }}>
+            <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
             <div>
               <p style={{ fontWeight: 600 }}>Error de conexión Firebase</p>
-              <p style={{ fontSize: 11, color: 'rgba(240,92,92,0.7)', marginTop: 2 }}>Verifica las credenciales en src/firebase.ts</p>
+              <p style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Verifica las credenciales en src/firebase.ts</p>
             </div>
           </div>
         )}
 
         {/* ── Form ── */}
         {showForm && (
-          <div className="fade-up" style={{
-            padding: '22px', borderRadius: 18,
-            background: 'var(--surface2)',
-            border: '1px solid rgba(79,110,247,0.25)',
-            boxShadow: '0 0 40px rgba(79,110,247,0.08)',
-          }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: 'var(--text-1)' }}>
-              Registrar sorteo
-            </h2>
+          <div className="fu" style={{ ...S.card, border: '1px solid rgba(91,127,255,0.2)', boxShadow: '0 0 32px rgba(91,127,255,0.06)' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>Registrar sorteo</h2>
 
-            {/* Jackpot */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-                Bote (opcional)
-              </label>
+            <div style={{ marginBottom: 18 }}>
+              <label style={S.label}>Bote (opcional)</label>
               <input type="text" placeholder="ej. 130M€" value={formJackpot} onChange={e => setFormJackpot(e.target.value)} style={{
-                width: '100%', padding: '10px 12px',
-                background: 'var(--surface3)', border: '1px solid var(--border)',
-                borderRadius: 10, color: 'var(--text-1)', fontSize: 13,
-                outline: 'none', fontFamily: "'Space Mono', monospace",
+                width: '100%', padding: '9px 12px', background: 'var(--bg4)',
+                border: '1px solid var(--border)', borderRadius: 9,
+                color: 'var(--t1)', fontSize: 13, outline: 'none', fontFamily: "'Space Mono',monospace",
               }} />
             </div>
 
-            {/* Number pickers */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div style={{ padding: '16px', background: 'var(--surface3)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <NumberPicker max={50} count={5} selected={formNumbers} onChange={setFormNumbers} label="Números principales (1-50)" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: 14, background: 'var(--bg4)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                <NumberPicker max={50} count={5} selected={formNumbers} onChange={setFormNumbers} label="Números (1-50)" />
               </div>
-              <div style={{ padding: '16px', background: 'var(--surface3)', borderRadius: 12, border: '1px solid rgba(245,200,66,0.15)' }}>
-                <NumberPicker max={12} count={2} selected={formStars} onChange={setFormStars} label="⭐ Estrellas (1-12)" />
+              <div style={{ padding: 14, background: 'var(--bg4)', borderRadius: 10, border: '1px solid rgba(240,180,41,0.12)' }}>
+                <NumberPicker max={12} count={2} selected={formStars} onChange={setFormStars} label="Estrellas (1-12)" />
               </div>
             </div>
 
-            {/* Preview */}
             {(formNumbers.length > 0 || formStars.length > 0) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '16px 0 4px', padding: '12px 14px', background: 'var(--surface3)', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', margin: '14px 0 2px', padding: '10px 12px', background: 'var(--bg4)', borderRadius: 9 }}>
                 {formNumbers.map(n => <Ball key={n} n={n} size="md" />)}
-                {formStars.length > 0 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>·</span>}
+                {formStars.length > 0 && <span style={{ color: 'var(--t3)', margin: '0 4px' }}>·</span>}
                 {formStars.map(n => <Ball key={n} n={n} type="star" size="md" />)}
               </div>
             )}
 
-            {formError && <p style={{ fontSize: 12, color: 'var(--red)', fontFamily: "'Space Mono', monospace", margin: '10px 0 0' }}>{formError}</p>}
+            {formError && <p style={{ fontSize: 11, color: 'var(--red)', fontFamily: "'Space Mono',monospace", marginTop: 10 }}>{formError}</p>}
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={handleSubmit} disabled={submitting} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '11px 22px', borderRadius: 10, border: 'none',
-                background: 'linear-gradient(135deg, #4F6EF7, #3451D1)',
-                color: '#fff', fontSize: 14, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
-                opacity: submitting ? 0.7 : 1, boxShadow: '0 4px 16px rgba(79,110,247,0.3)',
-                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px', borderRadius: 9,
+                border: 'none', background: 'var(--blue)', color: '#fff', fontSize: 13, fontWeight: 600,
+                cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.6 : 1,
+                boxShadow: '0 3px 14px rgba(91,127,255,0.35)',
               }}>
-                {submitting ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <PlusCircle size={15} />}
-                Guardar sorteo
+                {submitting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <PlusCircle size={14} />}
+                Guardar
               </button>
-              <button onClick={() => setShowForm(false)} style={{
-                padding: '11px 18px', borderRadius: 10,
-                background: 'var(--surface4)', border: '1px solid var(--border)',
-                color: 'var(--text-2)', fontSize: 14, cursor: 'pointer',
-              }}>
+              <button onClick={() => setShowForm(false)} style={{ padding: '10px 16px', borderRadius: 9, background: 'var(--bg5)', border: '1px solid var(--border)', color: 'var(--t2)', fontSize: 13, cursor: 'pointer' }}>
                 Cancelar
               </button>
             </div>
           </div>
         )}
 
-        {/* ── Loading ── */}
+        {/* Loading */}
         {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-            <Loader2 size={22} style={{ animation: 'spin 1s linear infinite', marginRight: 10 }} />
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 13 }}>Cargando sorteos...</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--t3)' }}>
+            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', marginRight: 10 }} />
+            <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 12 }}>Conectando...</span>
           </div>
         )}
 
-        {/* ── TAB: Sorteos ── */}
+        {/* ── Sorteos ── */}
         {!loading && tab === 'draws' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {draws.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎰</div>
-                <p style={{ fontSize: 14, fontFamily: "'Space Mono', monospace" }}>Sin sorteos registrados</p>
-                <p style={{ fontSize: 12, marginTop: 6 }}>Agrega el primer resultado con el botón de arriba</p>
+              <div style={{ textAlign: 'center', padding: '80px 0' }}>
+                <div style={{ fontSize: 44, marginBottom: 14 }}>🎰</div>
+                <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Sin sorteos registrados</p>
+                <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 6 }}>Agrega el primer resultado arriba</p>
               </div>
-            ) : draws.map((d, i) => (
+            ) : draws.map((d: any, i: number) => (
               <DrawCard key={d.id} draw={d} index={i} onDelete={() => d.id && deleteDraw(d.id)} />
             ))}
           </div>
         )}
 
-        {/* ── TAB: Análisis ── */}
+        {/* ── Análisis ── */}
         {!loading && tab === 'analysis' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {draws.length < 3 ? (
-              <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-                <p style={{ fontSize: 14, fontFamily: "'Space Mono', monospace" }}>Necesitas al menos 3 sorteos</p>
-                <p style={{ fontSize: 12, marginTop: 6 }}>Actualmente tienes {draws.length}</p>
+              <div style={{ textAlign: 'center', padding: '80px 0' }}>
+                <div style={{ fontSize: 44, marginBottom: 14 }}>📊</div>
+                <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Mínimo 3 sorteos para analizar</p>
+                <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 4 }}>Tienes {draws.length} actualmente</p>
               </div>
-            ) : (
-              <>
-                {/* Stats */}
-                <div className="fade-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                  <StatCard label="Total sorteos" value={draws.length} accent="var(--blue)" />
-                  <StatCard label="Gap promedio" value={analysis.averageGap.toFixed(1)} accent="var(--gold)" />
-                  <StatCard label="Pares top" value={analysis.mostCommonPairs.length} accent="var(--green)" />
-                </div>
-
-                {/* Hot / Cold */}
-                <div className="fade-up-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {/* Hot */}
-                  <div style={{ padding: '18px', borderRadius: 16, background: 'var(--surface2)', border: '1px solid rgba(240,120,60,0.2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(240,120,60,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Flame size={14} color="#F0783C" />
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#F0783C' }}>Números calientes</p>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                      {analysis.hotNumbers.map(n => <Ball key={n} n={n} size="sm" />)}
-                    </div>
+            ) : <>
+              {/* Stats */}
+              <div className="fu" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                {[
+                  { label: 'Sorteos', value: draws.length, color: 'var(--blue)' },
+                  { label: 'Gap prom.', value: analysis.averageGap.toFixed(1), color: 'var(--gold)' },
+                  { label: 'Pares top', value: analysis.mostCommonPairs.length, color: 'var(--green)' },
+                ].map(s => (
+                  <div key={s.label} style={{ ...S.card, textAlign: 'center' }}>
+                    <p style={{ fontSize: 26, fontWeight: 800, color: s.color }}>{s.value}</p>
+                    <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginTop: 4, textTransform: 'uppercase' }}>{s.label}</p>
                   </div>
-                  {/* Cold */}
-                  <div style={{ padding: '18px', borderRadius: 16, background: 'var(--surface2)', border: '1px solid rgba(79,160,240,0.2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(79,160,240,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Snowflake size={14} color="#4FA0F0" />
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#4FA0F0' }}>Números fríos</p>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                      {analysis.coldNumbers.map(n => <Ball key={n} n={n} size="sm" />)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stars */}
-                <div className="fade-up-3" style={{ padding: '18px', borderRadius: 16, background: 'var(--surface2)', border: '1px solid rgba(245,200,66,0.2)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(245,200,66,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Star size={14} color="var(--gold)" />
-                    </div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold)' }}>Estrellas</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: 32 }}>
-                    <div>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Más frecuentes</p>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {analysis.hotStars.map(n => <Ball key={n} n={n} type="star" size="sm" />)}
-                      </div>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Menos frecuentes</p>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {analysis.coldStars.map(n => <Ball key={n} n={n} type="star" size="sm" />)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Common pairs */}
-                {analysis.mostCommonPairs.length > 0 && (
-                  <div style={{ padding: '18px', borderRadius: 16, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginBottom: 14 }}>Pares más frecuentes</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                      {analysis.mostCommonPairs.map(([a, b], i) => (
-                        <div key={i} style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '6px 10px', borderRadius: 10,
-                          background: 'var(--surface3)', border: '1px solid var(--border)'
-                        }}>
-                          <Ball n={a} size="sm" />
-                          <span style={{ color: 'var(--text-3)', fontSize: 12 }}>+</span>
-                          <Ball n={b} size="sm" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── TAB: Predicciones ── */}
-        {!loading && tab === 'predictions' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {draws.length < 3 ? (
-              <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🔮</div>
-                <p style={{ fontSize: 14, fontFamily: "'Space Mono', monospace" }}>Necesitas al menos 3 sorteos</p>
-              </div>
-            ) : (
-              <>
-                {/* Disclaimer */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '12px 14px', borderRadius: 10,
-                  background: 'rgba(245,200,66,0.07)', border: '1px solid rgba(245,200,66,0.15)',
-                  marginBottom: 4,
-                }}>
-                  <AlertTriangle size={13} color="var(--gold)" style={{ flexShrink: 0 }} />
-                  <p style={{ fontSize: 11, color: 'var(--gold)', fontFamily: "'Space Mono', monospace", lineHeight: 1.6 }}>
-                    Análisis estadístico — el euromillones es aleatorio. Juega con responsabilidad.
-                  </p>
-                </div>
-
-                {analysis.predictions.map((pred, i) => (
-                  <PredictionCard
-                    key={i} pred={pred} index={i}
-                    expanded={expandedPred === i}
-                    onToggle={() => setExpandedPred(expandedPred === i ? null : i)}
-                  />
                 ))}
-              </>
-            )}
+              </div>
+
+              {/* Hot / Cold */}
+              <div className="fu2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ ...S.card, border: '1px solid rgba(255,140,60,0.15)' }}>
+                  <p style={{ ...S.section as any }}><Flame size={13} color="#FF8C3C" /> Calientes</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {analysis.hotNumbers.map((n: number) => <Ball key={n} n={n} size="sm" />)}
+                  </div>
+                </div>
+                <div style={{ ...S.card, border: '1px solid rgba(79,160,240,0.15)' }}>
+                  <p style={{ ...S.section as any }}><Snowflake size={13} color="#4FA0F0" /> Fríos</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {analysis.coldNumbers.map((n: number) => <Ball key={n} n={n} size="sm" />)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stars */}
+              <div className="fu3" style={{ ...S.card, border: '1px solid rgba(240,180,41,0.15)' }}>
+                <p style={{ ...S.section as any }}><Star size={13} color="var(--gold)" /> Estrellas</p>
+                <div style={{ display: 'flex', gap: 28 }}>
+                  <div>
+                    <p style={{ fontSize: 9, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Frecuentes</p>
+                    <div style={{ display: 'flex', gap: 5 }}>{analysis.hotStars.map((n: number) => <Ball key={n} n={n} type="star" size="sm" />)}</div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 9, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Raras</p>
+                    <div style={{ display: 'flex', gap: 5 }}>{analysis.coldStars.map((n: number) => <Ball key={n} n={n} type="star" size="sm" />)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pairs */}
+              {analysis.mostCommonPairs.length > 0 && (
+                <div style={S.card}>
+                  <p style={{ ...S.section as any }}>Pares frecuentes</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {analysis.mostCommonPairs.map(([a, b]: [number, number], i: number) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 9px', borderRadius: 8, background: 'var(--bg4)', border: '1px solid var(--border)' }}>
+                        <Ball n={a} size="sm" /><span style={{ color: 'var(--t3)', fontSize: 11 }}>+</span><Ball n={b} size="sm" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>}
           </div>
         )}
-      </div>
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
-        input::placeholder { color: var(--text-3); }
-      `}</style>
+        {/* ── Predicciones ── */}
+        {!loading && tab === 'predictions' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {draws.length < 3 ? (
+              <div style={{ textAlign: 'center', padding: '80px 0' }}>
+                <div style={{ fontSize: 44, marginBottom: 14 }}>🔮</div>
+                <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Mínimo 3 sorteos para predecir</p>
+              </div>
+            ) : <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 9, background: 'rgba(240,180,41,0.06)', border: '1px solid rgba(240,180,41,0.12)' }}>
+                <AlertTriangle size={12} color="var(--gold)" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", lineHeight: 1.6 }}>
+                  Análisis estadístico — la lotería es aleatoria. Juega con responsabilidad.
+                </p>
+              </div>
+              {analysis.predictions.map((pred: any, i: number) => (
+                <PredCard key={i} pred={pred} index={i} expanded={expandedPred === i} onToggle={() => setExpandedPred(expandedPred === i ? null : i)} />
+              ))}
+            </>}
+          </div>
+        )}
+      </main>
     </div>
   )
 }
