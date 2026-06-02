@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCbHiXWEe-a1QTIehJ_jBVKDnq-7hpy6r0",
-  authDomain: "claude-lot.firebaseapp.com",
-  databaseURL: "https://claude-lot-default-rtdb.firebaseio.com",
-  projectId: "claude-lot",
-  storageBucket: "claude-lot.firebasestorage.app",
-  messagingSenderId: "750179480123",
-  appId: "1:750179480123:web:4f16cdb38409847441e21e"
+  apiKey: "AIzaSyBJEcwfzPJarO9fHq4d_ik-YlUBiJb67Aw",
+  authDomain: "lucklab-80466.firebaseapp.com",
+  databaseURL: "https://lucklab-80466-default-rtdb.firebaseio.com",
+  projectId: "lucklab-80466",
+  storageBucket: "lucklab-80466.firebasestorage.app",
+  messagingSenderId: "96326408146",
+  appId: "1:96326408146:web:6ba2e3b6ce5ff1226e9a0b"
 }
 
 const app = initializeApp(firebaseConfig)
