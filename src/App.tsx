@@ -4,8 +4,10 @@ import { analyzeDraws, analyzePositions, getTopPicks } from './utils/analysis'
 import {
   PlusCircle, Trash2, TrendingUp, Star, BarChart3,
   ChevronDown, ChevronUp, Loader2, Flame, Snowflake,
-  Trophy, AlertTriangle, X
+  Trophy, AlertTriangle, X, TicketIcon
 } from 'lucide-react'
+import StatsTab from './components/StatsTab'
+import BetsTab from './components/BetsTab'
 
 // ─── Ball ─────────────────────────────────────────────────────────────────────
 function Ball({ n, type = 'number', size = 'md' }: {
@@ -181,7 +183,7 @@ function Logo() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { draws, loading, error, addDraw, deleteDraw, toggleExclude } = useDraws()
-  const [tab, setTab] = useState<'draws' | 'analysis' | 'predictions'>('draws')
+  const [tab, setTab] = useState<'draws' | 'analysis' | 'stats' | 'predictions' | 'bets'>('draws')
   const [formNumbers, setFormNumbers] = useState<number[]>([])
   const [formStars, setFormStars]     = useState<number[]>([])
   const [formJackpot, setFormJackpot] = useState('')
@@ -217,7 +219,9 @@ export default function App() {
   const tabs = [
     { id: 'draws',       label: 'Sorteos',     icon: <Trophy size={14} /> },
     { id: 'analysis',    label: 'Análisis',    icon: <BarChart3 size={14} /> },
+    { id: 'stats',       label: 'Stats',       icon: <Star size={14} /> },
     { id: 'predictions', label: 'Predicciones',icon: <TrendingUp size={14} /> },
+    { id: 'bets',        label: 'Mis Boletos', icon: <TicketIcon size={14} /> },
   ] as const
 
   const S: Record<string, React.CSSProperties> = {
@@ -498,6 +502,12 @@ export default function App() {
             </>}
           </div>
         )}
+
+        {/* ── Stats ── */}
+        {!loading && tab === 'stats' && <StatsTab draws={activeDraws} />}
+
+        {/* ── Mis Boletos ── */}
+        {!loading && tab === 'bets' && <BetsTab />}
 
         {/* ── Predicciones ── */}
         {!loading && tab === 'predictions' && (
