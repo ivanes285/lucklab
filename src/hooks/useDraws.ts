@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
-import {
-  collection, addDoc, deleteDoc, doc,
-  onSnapshot, Timestamp
-} from 'firebase/firestore'
+import { ref, push, remove, onValue } from 'firebase/database'
 import { db } from '../firebase'
 import { Draw } from '../types'
 
-const COLLECTION = 'draws'
+const PATH = 'euromillones'
 
 export function useDraws() {
   const [draws, setDraws] = useState<Draw[]>([])
@@ -14,12 +11,12 @@ export function useDraws() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, COLLECTION), (snapshot) => {
-      const data = snapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      })) as Draw[]
-      // Ordenar en el cliente por createdAt desc
+    const dbRef = ref(db, PATH)
+    const unsub = onValue(dbRef, (snapshot) => {
+      const data: Draw[] = []
+      snapshot.forEach((child) => {
+        data.push({ id: child.key!, ...child.val() })
+      })
       data.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
       setDraws(data)
       setLoading(false)
@@ -31,12 +28,12 @@ export function useDraws() {
   }, [])
 
   const addDraw = async (draw: Omit<Draw, 'id' | 'createdAt' | 'date'>) => {
-    const now = Timestamp.now()
+    const now = Date.now()
     try {
-      await addDoc(collection(db, COLLECTION), {
+      await push(ref(db, PATH), {
         ...draw,
-        createdAt: now.toMillis(),
-        date: now.toDate().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
+        createdAt: now,
+        date: new Date(now).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
       })
     } catch (err: any) {
       setError(err.message)
@@ -46,7 +43,7 @@ export function useDraws() {
 
   const deleteDraw = async (id: string) => {
     try {
-      await deleteDoc(doc(db, COLLECTION, id))
+      await remove(ref(db, `${PATH}/${id}`))
     } catch (err: any) {
       setError(err.message)
       throw err
