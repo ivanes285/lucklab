@@ -232,7 +232,6 @@ function PredictionCard({ pred, index, expanded, onToggle }: {
 export default function App() {
   const { draws, loading, error, addDraw, deleteDraw } = useDraws()
   const [tab, setTab] = useState<'draws' | 'analysis' | 'predictions'>('draws')
-  const [formDate, setFormDate] = useState('')
   const [formNumbers, setFormNumbers] = useState<number[]>([])
   const [formStars, setFormStars] = useState<number[]>([])
   const [formJackpot, setFormJackpot] = useState('')
@@ -244,14 +243,13 @@ export default function App() {
   const analysis = useMemo(() => analyzeDraws(draws), [draws])
 
   const handleSubmit = async () => {
-    if (!formDate) { setFormError('Selecciona una fecha'); return }
     if (formNumbers.length !== 5) { setFormError('Selecciona exactamente 5 números'); return }
     if (formStars.length !== 2) { setFormError('Selecciona exactamente 2 estrellas'); return }
     setFormError('')
     setSubmitting(true)
     try {
-      await addDraw({ date: formDate, numbers: formNumbers, stars: formStars, jackpot: formJackpot || undefined })
-      setFormDate(''); setFormNumbers([]); setFormStars([]); setFormJackpot('')
+      await addDraw({ numbers: formNumbers, stars: formStars, jackpot: formJackpot || undefined })
+      setFormNumbers([]); setFormStars([]); setFormJackpot('')
       setShowForm(false)
     } catch {
       setFormError('Error guardando. Revisa tu configuración de Firebase.')
@@ -366,33 +364,17 @@ export default function App() {
               Registrar sorteo
             </h2>
 
-            {/* Date + Jackpot */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-                  Fecha del sorteo
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} style={{
-                    width: '100%', padding: '10px 12px',
-                    background: 'var(--surface3)', border: '1px solid var(--border)',
-                    borderRadius: 10, color: 'var(--text-1)', fontSize: 13,
-                    outline: 'none', fontFamily: "'Space Mono', monospace",
-                    colorScheme: 'dark',
-                  }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-                  Bote (opcional)
-                </label>
-                <input type="text" placeholder="ej. 130M€" value={formJackpot} onChange={e => setFormJackpot(e.target.value)} style={{
-                  width: '100%', padding: '10px 12px',
-                  background: 'var(--surface3)', border: '1px solid var(--border)',
-                  borderRadius: 10, color: 'var(--text-1)', fontSize: 13,
-                  outline: 'none', fontFamily: "'Space Mono', monospace",
-                }} />
-              </div>
+            {/* Jackpot */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                Bote (opcional)
+              </label>
+              <input type="text" placeholder="ej. 130M€" value={formJackpot} onChange={e => setFormJackpot(e.target.value)} style={{
+                width: '100%', padding: '10px 12px',
+                background: 'var(--surface3)', border: '1px solid var(--border)',
+                borderRadius: 10, color: 'var(--text-1)', fontSize: 13,
+                outline: 'none', fontFamily: "'Space Mono', monospace",
+              }} />
             </div>
 
             {/* Number pickers */}

@@ -14,7 +14,7 @@ export function useDraws() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const q = query(collection(db, COLLECTION), orderBy('date', 'desc'))
+    const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({
         id: d.id,
@@ -29,11 +29,13 @@ export function useDraws() {
     return () => unsub()
   }, [])
 
-  const addDraw = async (draw: Omit<Draw, 'id' | 'createdAt'>) => {
+  const addDraw = async (draw: Omit<Draw, 'id' | 'createdAt' | 'date'>) => {
+    const now = Timestamp.now()
     try {
       await addDoc(collection(db, COLLECTION), {
         ...draw,
-        createdAt: Timestamp.now().toMillis()
+        createdAt: now.toMillis(),
+        date: now.toDate().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
       })
     } catch (err: any) {
       setError(err.message)

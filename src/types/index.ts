@@ -1,9 +1,9 @@
 export interface Draw {
   id?: string
-  date: string
-  numbers: number[]   // 5 números del 1 al 50
-  stars: number[]     // 2 estrellas del 1 al 12
-  jackpot?: string    // Premio bote (opcional)
+  date: string       // generado automáticamente al guardar
+  numbers: number[]
+  stars: number[]
+  jackpot?: string
   createdAt?: number
 }
 
@@ -12,7 +12,7 @@ export interface Prediction {
   description: string
   numbers: number[]
   stars: number[]
-  confidence: number  // 0-100
+  confidence: number
   reasoning: string
 }
 
