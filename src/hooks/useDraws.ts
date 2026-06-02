@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   collection, addDoc, deleteDoc, doc,
-  onSnapshot, query, orderBy, Timestamp
+  onSnapshot, Timestamp
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Draw } from '../types'
@@ -14,12 +14,13 @@ export function useDraws() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'))
-    const unsub = onSnapshot(q, (snapshot) => {
+    const unsub = onSnapshot(collection(db, COLLECTION), (snapshot) => {
       const data = snapshot.docs.map(d => ({
         id: d.id,
         ...d.data()
       })) as Draw[]
+      // Ordenar en el cliente por createdAt desc
+      data.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
       setDraws(data)
       setLoading(false)
     }, (err) => {
