@@ -175,8 +175,16 @@ export default function App() {
   const [formError, setFormError]     = useState('')
   const [showForm, setShowForm]       = useState(false)
   const [expandedPred, setExpandedPred] = useState<number | null>(0)
+  const [filterYear, setFilterYear] = useState<string>('all')
 
   const analysis  = useMemo(() => analyzeDraws(draws), [draws])
+  const years = useMemo(() => {
+    const ys = [...new Set(draws.map(d => d.date?.slice(0,4)).filter(Boolean))].sort().reverse()
+    return ys
+  }, [draws])
+  const filteredDraws = useMemo(() =>
+    filterYear === 'all' ? draws : draws.filter(d => d.date?.startsWith(filterYear))
+  , [draws, filterYear])
   const positions = useMemo(() => analyzePositions(draws), [draws])
   const topPicks  = useMemo(() => getTopPicks(draws), [draws])
 
@@ -326,16 +334,34 @@ export default function App() {
 
         {/* ── Sorteos ── */}
         {!loading && tab === 'draws' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {draws.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 0' }}>
                 <div style={{ fontSize: 44, marginBottom: 14 }}>🎰</div>
                 <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Sin sorteos registrados</p>
                 <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 6 }}>Agrega el primer resultado arriba</p>
               </div>
-            ) : draws.map((d: any, i: number) => (
-              <DrawCard key={d.id} draw={d} index={i} onDelete={() => d.id && deleteDraw(d.id)} />
-            ))}
+            ) : <>
+              {/* Year filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.07em' }}>Año:</span>
+                {['all', ...years].map(y => (
+                  <button key={y} onClick={() => setFilterYear(y)} style={{
+                    padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontFamily: "'Space Mono',monospace", fontWeight: 600,
+                    background: filterYear === y ? 'var(--blue)' : 'var(--bg4)',
+                    color: filterYear === y ? '#fff' : 'var(--t3)',
+                    transition: 'all 0.15s',
+                  }}>{y === 'all' ? 'Todos' : y}</button>
+                ))}
+                <span style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginLeft: 'auto' }}>
+                  {filteredDraws.length} sorteos
+                </span>
+              </div>
+              {filteredDraws.map((d: any, i: number) => (
+                <DrawCard key={d.id} draw={d} index={i} onDelete={() => d.id && deleteDraw(d.id)} />
+              ))}
+            </>}
           </div>
         )}
 
