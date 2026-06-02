@@ -236,6 +236,7 @@ export default function App() {
               borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
               background: showForm ? 'var(--bg5)' : 'var(--blue)',
               color: '#fff', transition: 'all 0.2s',
+              WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
               boxShadow: showForm ? 'none' : '0 3px 14px rgba(91,127,255,0.4)',
             }}>
               {showForm ? <><X size={13} />Cerrar</> : <><PlusCircle size={13} />Agregar</>}
@@ -243,15 +244,18 @@ export default function App() {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 2, marginBottom: -1 }}>
+          <div style={{ display: 'flex', gap: 4, paddingBottom: 0 }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
-                display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
-                background: tab === t.id ? 'var(--bg3)' : 'none',
-                border: tab === t.id ? '1px solid var(--border)' : '1px solid transparent',
-                borderBottom: tab === t.id ? `1px solid var(--bg3)` : '1px solid transparent',
-                borderRadius: '8px 8px 0 0', color: tab === t.id ? 'var(--t1)' : 'var(--t3)',
-                fontSize: 12, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s',
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '10px 16px',
+                background: 'none', border: 'none',
+                borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent',
+                color: tab === t.id ? 'var(--t1)' : 'var(--t3)',
+                fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
+                cursor: 'pointer', transition: 'all 0.15s',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
               }}>
                 {t.icon} {t.label}
               </button>
@@ -352,6 +356,7 @@ export default function App() {
                     background: filterYear === y ? 'var(--blue)' : 'var(--bg4)',
                     color: filterYear === y ? '#fff' : 'var(--t3)',
                     transition: 'all 0.15s',
+                    WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                   }}>{y === 'all' ? 'Todos' : y}</button>
                 ))}
                 <span style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginLeft: 'auto' }}>
