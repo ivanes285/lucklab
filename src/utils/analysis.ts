@@ -1,4 +1,5 @@
 import { Draw, Prediction, AnalysisResult, FrequencyMap } from '../types'
+// note: deltaPositionStrategy exported separately
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
@@ -309,6 +310,7 @@ export function analyzeDraws(draws: Draw[]): AnalysisResult {
     weightedStrategy(draws),
     markovStrategy(draws),
     streakStrategy(draws),
+    deltaPositionStrategy(draws),
     hotStrategy(draws),
     coldStrategy(draws),
     balanceStrategy(draws),
@@ -586,5 +588,169 @@ export function consensusStrategy(draws: Draw[]): Prediction {
     numbers, stars,
     confidence: 70,
     reasoning: `Votos acumulados por número: ${agreements}. Este es el enfoque más robusto — no depende de una sola técnica sino del acuerdo entre varias metodologías independientes.`
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANÁLISIS DE DIFERENCIAS CONSECUTIVAS POR POSICIÓN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface DeltaAnalysis {
+  position: number
+  lastValue: number
+  deltas: number[]
+  estimates: {
+    method: string
+    label: string
+    value: number
+    description: string
+    color: string
+  }[]
+  consensus: number
+}
+
+export function analyzeDeltasByPosition(draws: Draw[]): DeltaAnalysis[] {
+  if (draws.length < 5) return []
+
+  const sorted = [...draws].sort((a, b) => a.date.localeCompare(b.date))
+
+  return [1,2,3,4,5].map(pos => {
+    // Serie de valores históricos en esta posición
+    const values = sorted.map(d => [...d.numbers].sort((a,b) => a-b)[pos-1]).filter(Boolean)
+    const lastValue = values[values.length - 1]
+
+    // Diferencias consecutivas (delta n+1 - n)
+    const deltas: number[] = []
+    for (let i = 1; i < values.length; i++) {
+      deltas.push(values[i] - values[i-1])
+    }
+
+    if (deltas.length === 0) return { position: pos, lastValue, deltas, estimates: [], consensus: lastValue }
+
+    // Método 1: Media de deltas
+    const meanDelta = deltas.reduce((a,b) => a+b, 0) / deltas.length
+    const method1 = Math.round(lastValue + meanDelta)
+
+    // Método 2: Mediana de deltas (más robusta ante extremos)
+    const sortedDeltas = [...deltas].sort((a,b) => a-b)
+    const mid = Math.floor(sortedDeltas.length / 2)
+    const medianDelta = sortedDeltas.length % 2 === 0
+      ? (sortedDeltas[mid-1] + sortedDeltas[mid]) / 2
+      : sortedDeltas[mid]
+    const method2 = Math.round(lastValue + medianDelta)
+
+    // Método 3: Últimos 5 deltas (tendencia reciente)
+    const recent5 = deltas.slice(-5)
+    const recent5Mean = recent5.reduce((a,b) => a+b, 0) / recent5.length
+    const method3 = Math.round(lastValue + recent5Mean)
+
+    // Método 4: Regresión lineal sobre los últimos 20 valores
+    const window = values.slice(-20)
+    const n = window.length
+    const xMean = (n - 1) / 2
+    const yMean = window.reduce((a,b) => a+b, 0) / n
+    let num = 0, den = 0
+    window.forEach((y, x) => {
+      num += (x - xMean) * (y - yMean)
+      den += (x - xMean) ** 2
+    })
+    const slope = den !== 0 ? num / den : 0
+    const method4 = Math.round(window[window.length-1] + slope)
+
+    // Clamp al rango 1-50
+    const clamp = (v: number) => Math.min(50, Math.max(1, v))
+
+    const estimates = [
+      { method: 'Media Δ', label: 'Media de saltos', value: clamp(method1), description: `Δ promedio: ${meanDelta.toFixed(1)}`, color: '#5B7FFF' },
+      { method: 'Mediana Δ', label: 'Mediana de saltos', value: clamp(method2), description: 'Más robusta ante extremos', color: '#4ECBA0' },
+      { method: 'Últimos 5 Δ', label: 'Tendencia reciente', value: clamp(method3), description: `Δ reciente: ${recent5Mean.toFixed(1)}`, color: '#F0B429' },
+      { method: 'Regresión', label: 'Regresión lineal N+1', value: clamp(method4), description: `Pendiente: ${slope.toFixed(2)}`, color: '#FF7BAC' },
+    ]
+
+    // Consenso: promedio de los 4 métodos
+    const consensus = clamp(Math.round(estimates.reduce((s,e) => s+e.value, 0) / estimates.length))
+
+    return { position: pos, lastValue, deltas, estimates, consensus }
+  })
+}
+
+// Misma lógica para estrellas (posiciones 1-2, rango 1-12)
+export function analyzeDeltasStars(draws: Draw[]): DeltaAnalysis[] {
+  if (draws.length < 5) return []
+
+  const sorted = [...draws].sort((a, b) => a.date.localeCompare(b.date))
+
+  return [1,2].map(pos => {
+    const values = sorted.map(d => [...d.stars].sort((a,b) => a-b)[pos-1]).filter(Boolean)
+    const lastValue = values[values.length - 1]
+    const deltas: number[] = []
+    for (let i = 1; i < values.length; i++) deltas.push(values[i] - values[i-1])
+    if (deltas.length === 0) return { position: pos, lastValue, deltas, estimates: [], consensus: lastValue }
+
+    const meanDelta = deltas.reduce((a,b) => a+b, 0) / deltas.length
+    const sortedDeltas = [...deltas].sort((a,b) => a-b)
+    const mid = Math.floor(sortedDeltas.length / 2)
+    const medianDelta = sortedDeltas.length % 2 === 0 ? (sortedDeltas[mid-1]+sortedDeltas[mid])/2 : sortedDeltas[mid]
+    const recent5 = deltas.slice(-5)
+    const recent5Mean = recent5.reduce((a,b) => a+b, 0) / recent5.length
+    const window = values.slice(-20)
+    const n = window.length
+    const xMean = (n-1)/2
+    const yMean = window.reduce((a,b) => a+b, 0) / n
+    let num = 0, den = 0
+    window.forEach((y,x) => { num += (x-xMean)*(y-yMean); den += (x-xMean)**2 })
+    const slope = den !== 0 ? num/den : 0
+
+    const clamp = (v: number) => Math.min(12, Math.max(1, v))
+    const estimates = [
+      { method: 'Media Δ', label: 'Media de saltos', value: clamp(Math.round(lastValue+meanDelta)), description: `Δ promedio: ${meanDelta.toFixed(1)}`, color: '#5B7FFF' },
+      { method: 'Mediana Δ', label: 'Mediana de saltos', value: clamp(Math.round(lastValue+medianDelta)), description: 'Más robusta ante extremos', color: '#4ECBA0' },
+      { method: 'Últimos 5 Δ', label: 'Tendencia reciente', value: clamp(Math.round(lastValue+recent5Mean)), description: `Δ reciente: ${recent5Mean.toFixed(1)}`, color: '#F0B429' },
+      { method: 'Regresión', label: 'Regresión lineal N+1', value: clamp(Math.round(window[window.length-1]+slope)), description: `Pendiente: ${slope.toFixed(2)}`, color: '#FF7BAC' },
+    ]
+    const consensus = clamp(Math.round(estimates.reduce((s,e) => s+e.value, 0) / estimates.length))
+    return { position: pos, lastValue, deltas, estimates, consensus }
+  })
+}
+
+// Estrategia de predicción basada en deltas
+export function deltaPositionStrategy(draws: Draw[]): Prediction {
+  const numDeltas = analyzeDeltasByPosition(draws)
+  const starDeltas = analyzeDeltasStars(draws)
+
+  const used = new Set<number>()
+  const numbers: number[] = []
+
+  for (const d of numDeltas) {
+    if (d.consensus && !used.has(d.consensus) && d.consensus >= 1 && d.consensus <= 50) {
+      numbers.push(d.consensus)
+      used.add(d.consensus)
+    }
+  }
+  while (numbers.length < 5) {
+    const r = Math.floor(Math.random() * 50) + 1
+    if (!used.has(r)) { numbers.push(r); used.add(r) }
+  }
+
+  const usedStars = new Set<number>()
+  const stars: number[] = []
+  for (const d of starDeltas) {
+    if (d.consensus && !usedStars.has(d.consensus)) {
+      stars.push(d.consensus); usedStars.add(d.consensus)
+    }
+  }
+  while (stars.length < 2) {
+    const r = Math.floor(Math.random() * 12) + 1
+    if (!usedStars.has(r)) { stars.push(r); usedStars.add(r) }
+  }
+
+  const posDesc = numDeltas.map((d,i) => `P${i+1}:${d.lastValue}→${d.consensus}`).join(' ')
+
+  return {
+    strategy: '📈 Delta por Posición',
+    description: '4 métodos estadísticos (media, mediana, tendencia reciente, regresión lineal) aplicados a los saltos entre sorteos consecutivos por posición.',
+    numbers: numbers.sort((a,b)=>a-b), stars: stars.sort((a,b)=>a-b),
+    confidence: 59,
+    reasoning: `Analiza cómo evoluciona cada posición a lo largo del tiempo. ${posDesc}. El consenso de los 4 métodos define el siguiente estimado.`
   }
 }
