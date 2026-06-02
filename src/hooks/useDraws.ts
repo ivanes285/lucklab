@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ref, push, remove, onValue } from 'firebase/database'
+import { ref, push, remove, update, onValue } from 'firebase/database'
 import { db } from '../firebase'
 import { Draw } from '../types'
 
@@ -16,7 +16,6 @@ export function useDraws() {
       snapshot.forEach((child) => {
         data.push({ id: child.key!, ...child.val() })
       })
-      // Ordenar por fecha del sorteo (date) de más reciente a más antiguo
       data.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
       setDraws(data)
       setLoading(false)
@@ -34,6 +33,7 @@ export function useDraws() {
       await push(ref(db, PATH), {
         ...draw,
         createdAt: now,
+        excluded: false,
         date: new Date(now).toISOString().split('T')[0]
       })
     } catch (err: any) {
@@ -51,5 +51,14 @@ export function useDraws() {
     }
   }
 
-  return { draws, loading, error, addDraw, deleteDraw }
+  const toggleExclude = async (id: string, excluded: boolean) => {
+    try {
+      await update(ref(db, `${PATH}/${id}`), { excluded: !excluded })
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  return { draws, loading, error, addDraw, deleteDraw, toggleExclude }
 }

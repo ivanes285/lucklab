@@ -5,6 +5,7 @@ export interface Draw {
   stars: number[]
   jackpot?: string
   createdAt?: number
+  excluded?: boolean
 }
 
 export interface Prediction {

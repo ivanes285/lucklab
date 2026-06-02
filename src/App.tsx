@@ -73,17 +73,18 @@ function NumberPicker({ max, count, selected, onChange, label }: {
 }
 
 // ─── DrawCard ─────────────────────────────────────────────────────────────────
-function DrawCard({ draw, onDelete, index }: { draw: any, onDelete: () => void, index: number }) {
+function DrawCard({ draw, onDelete, onToggleExclude, index }: { draw: any, onDelete: () => void, onToggleExclude: () => void, index: number }) {
+  const excluded = !!draw.excluded
   return (
     <div className="fu" style={{
       animationDelay: `${index * 0.03}s`,
-      display: 'flex', alignItems: 'center', gap: 12,
+      display: 'flex', alignItems: 'center', gap: 10,
       padding: '10px 14px', borderRadius: 12,
-      background: 'var(--bg3)', border: '1px solid var(--border)',
-      transition: 'border-color 0.2s, background 0.2s',
-    }}
-    onMouseEnter={e => { const d = e.currentTarget as HTMLElement; d.style.borderColor = 'var(--border2)'; d.style.background = 'var(--bg4)' }}
-    onMouseLeave={e => { const d = e.currentTarget as HTMLElement; d.style.borderColor = 'var(--border)'; d.style.background = 'var(--bg3)' }}>
+      background: excluded ? 'rgba(255,255,255,0.02)' : 'var(--bg3)',
+      border: `1px solid ${excluded ? 'var(--t3)' : 'var(--border)'}`,
+      opacity: excluded ? 0.5 : 1,
+      transition: 'all 0.2s',
+    }}>
       <div style={{ minWidth: 76 }}>
         <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>{draw.date}</p>
         {draw.jackpot && <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", marginTop: 2 }}>{draw.jackpot}</p>}
@@ -93,7 +94,20 @@ function DrawCard({ draw, onDelete, index }: { draw: any, onDelete: () => void, 
         <span style={{ color: 'var(--t3)', margin: '0 3px', fontSize: 16 }}>·</span>
         {draw.stars.map((n: number) => <Ball key={n} n={n} type="star" size="sm" />)}
       </div>
-      <button onClick={onDelete} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 4, borderRadius: 6, transition: 'color 0.15s' }}
+      {/* Toggle exclude */}
+      <button onClick={onToggleExclude} title={excluded ? 'Incluir en análisis' : 'Excluir del análisis'} style={{
+        background: excluded ? 'rgba(91,127,255,0.15)' : 'none',
+        border: excluded ? '1px solid rgba(91,127,255,0.3)' : 'none',
+        cursor: 'pointer', color: excluded ? 'var(--blue)' : 'var(--t3)',
+        padding: '3px 6px', borderRadius: 6, fontSize: 10,
+        fontFamily: "'Space Mono',monospace", fontWeight: 700,
+        transition: 'all 0.15s', touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+      }}>
+        {excluded ? 'OFF' : 'ON'}
+      </button>
+      {/* Delete */}
+      <button onClick={onDelete} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 4, borderRadius: 6, transition: 'color 0.15s', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--red)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--t3)'}>
         <Trash2 size={13} />
@@ -166,7 +180,7 @@ function Logo() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const { draws, loading, error, addDraw, deleteDraw } = useDraws()
+  const { draws, loading, error, addDraw, deleteDraw, toggleExclude } = useDraws()
   const [tab, setTab] = useState<'draws' | 'analysis' | 'predictions'>('draws')
   const [formNumbers, setFormNumbers] = useState<number[]>([])
   const [formStars, setFormStars]     = useState<number[]>([])
@@ -177,7 +191,8 @@ export default function App() {
   const [expandedPred, setExpandedPred] = useState<number | null>(0)
   const [filterYear, setFilterYear] = useState<string>('all')
 
-  const analysis  = useMemo(() => analyzeDraws(draws), [draws])
+  const activeDraws = useMemo(() => draws.filter(d => !d.excluded), [draws])
+  const analysis  = useMemo(() => analyzeDraws(activeDraws), [activeDraws])
   const years = useMemo(() => {
     const ys = [...new Set(draws.map(d => d.date?.slice(0,4)).filter(Boolean))].sort().reverse()
     return ys
@@ -185,8 +200,8 @@ export default function App() {
   const filteredDraws = useMemo(() =>
     filterYear === 'all' ? draws : draws.filter(d => d.date?.startsWith(filterYear))
   , [draws, filterYear])
-  const positions = useMemo(() => analyzePositions(draws), [draws])
-  const topPicks  = useMemo(() => getTopPicks(draws), [draws])
+  const positions = useMemo(() => analyzePositions(activeDraws), [activeDraws])
+  const topPicks  = useMemo(() => getTopPicks(activeDraws), [activeDraws])
 
   const handleSubmit = async () => {
     if (formNumbers.length !== 5) { setFormError('Selecciona exactamente 5 números'); return }
@@ -226,7 +241,7 @@ export default function App() {
                   <span style={{ color: 'var(--blue)' }}>Lucky</span><span style={{ color: 'var(--gold)' }}>Lab</span>
                 </h1>
                 <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginTop: 1 }}>
-                  {draws.length} sorteo{draws.length !== 1 ? 's' : ''} registrados
+                  {activeDraws.length}/{draws.length} en análisis
                 </p>
               </div>
             </div>
@@ -364,7 +379,10 @@ export default function App() {
                 </span>
               </div>
               {filteredDraws.map((d: any, i: number) => (
-                <DrawCard key={d.id} draw={d} index={i} onDelete={() => d.id && deleteDraw(d.id)} />
+                <DrawCard key={d.id} draw={d} index={i}
+                  onDelete={() => d.id && deleteDraw(d.id)}
+                  onToggleExclude={() => d.id && toggleExclude(d.id, !!d.excluded)}
+                />
               ))}
             </>}
           </div>
