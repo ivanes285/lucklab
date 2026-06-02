@@ -562,10 +562,13 @@ export function consensusStrategy(draws: Draw[]): Prediction {
   const votes: FrequencyMap = {}
   const starVotes: FrequencyMap = {}
 
-  for (const pred of strategies) {
-    pred.numbers.forEach(n => { votes[n] = (votes[n] || 0) + 1 })
-    pred.stars.forEach(n   => { starVotes[n] = (starVotes[n] || 0) + 1 })
-  }
+  // Markov pesa 3x, Rachas 2x, Ponderación 1x — basado en rendimiento histórico
+  const weights = [3, 2, 1]
+  strategies.forEach((pred, i) => {
+    const w = weights[i] ?? 1
+    pred.numbers.forEach(n => { votes[n] = (votes[n] || 0) + w })
+    pred.stars.forEach(n   => { starVotes[n] = (starVotes[n] || 0) + w })
+  })
 
   // Desempate con ponderación
   const weighted = weightedFrequency(draws)
