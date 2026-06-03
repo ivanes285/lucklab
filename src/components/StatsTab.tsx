@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Draw } from '../types'
-import { analyzeDeltasByPosition, analyzeDeltasStars } from '../utils/analysis'
 import Ball from './Ball'
+import DeltaSection from './DeltaSection'
 
 interface Props { draws: Draw[] }
 
@@ -37,9 +37,7 @@ export default function StatsTab({ draws }: Props) {
     const minSum = Math.min(...sums)
     const maxSum = Math.max(...sums)
 
-    const numDeltas = analyzeDeltasByPosition(draws)
-    const starDeltas = analyzeDeltasStars(draws)
-    return { numFreq, starFreq, maxNum, maxStar, absenceStreak, evenPct, oddCount, evenCount, lowPct, highCount, lowCount, avgSum, minSum, maxSum, numDeltas, starDeltas }
+    return { numFreq, starFreq, maxNum, maxStar, absenceStreak, evenPct, oddCount, evenCount, lowPct, highCount, lowCount, avgSum, minSum, maxSum }
   }, [draws])
 
   if (!stats || draws.length < 3) return (
@@ -166,59 +164,10 @@ export default function StatsTab({ draws }: Props) {
       </div>
 
       {/* Delta por posición */}
-      {stats.numDeltas.length > 0 && (
-        <div style={card}>
-          <p style={title}>📈 Análisis de diferencias consecutivas por posición</p>
-          <p style={{fontSize:11,color:'var(--t2)',marginBottom:14,lineHeight:1.6}}>
-            Para cada posición (1-5), analiza cómo cambia el número entre sorteos consecutivos usando 4 métodos estadísticos.
-          </p>
-          <div style={{display:'flex',flexDirection:'column',gap:16}}>
-            {stats.numDeltas.map(d => (
-              <div key={d.position}>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-                  <span style={{fontSize:11,color:'var(--t3)',fontFamily:"'Space Mono',monospace",textTransform:'uppercase' as const}}>Posición {d.position}</span>
-                  <span style={{fontSize:10,color:'var(--t3)',fontFamily:"'Space Mono',monospace"}}>— último: <strong style={{color:'var(--t1)'}}>{d.lastValue}</strong></span>
-                  <span style={{fontSize:10,color:'var(--blue)',fontFamily:"'Space Mono',monospace",marginLeft:'auto'}}>
-                    consenso → <strong>{d.consensus}</strong>
-                  </span>
-                </div>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:6}}>
-                  {d.estimates.map(e => (
-                    <div key={e.method} style={{padding:'10px 12px',borderRadius:9,background:'var(--bg4)',border:`1px solid ${e.color}25`}}>
-                      <p style={{fontSize:9,color:'var(--t3)',fontFamily:"'Space Mono',monospace",textTransform:'uppercase' as const,letterSpacing:'0.07em',marginBottom:4}}>{e.method}</p>
-                      <p style={{fontSize:22,fontWeight:800,color:e.color,lineHeight:1}}>{e.value < 10 ? `0${e.value}` : e.value}</p>
-                      <p style={{fontSize:9,color:'var(--t3)',fontFamily:"'Space Mono',monospace",marginTop:4}}>{e.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Stars delta */}
-          <div style={{borderTop:'1px solid var(--border)',paddingTop:14,marginTop:14}}>
-            <p style={{fontSize:11,fontWeight:600,color:'var(--gold)',marginBottom:12}}>⭐ Estrellas</p>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-              {stats.starDeltas.map(d => (
-                <div key={d.position}>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-                    <span style={{fontSize:11,color:'var(--t3)',fontFamily:"'Space Mono',monospace",textTransform:'uppercase' as const}}>Estrella {d.position}</span>
-                    <span style={{fontSize:10,color:'var(--gold)',fontFamily:"'Space Mono',monospace"}}>→ <strong>{d.consensus}</strong></span>
-                  </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                    {d.estimates.map(e => (
-                      <div key={e.method} style={{padding:'7px 9px',borderRadius:7,background:'var(--bg4)',border:`1px solid ${e.color}20`}}>
-                        <p style={{fontSize:8,color:'var(--t3)',fontFamily:"'Space Mono',monospace",marginBottom:2}}>{e.method}</p>
-                        <p style={{fontSize:18,fontWeight:800,color:e.color,lineHeight:1}}>{e.value < 10 ? `0${e.value}` : e.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <div style={card}>
+        <p style={title}>📈 Análisis de diferencias consecutivas por posición</p>
+        <DeltaSection draws={draws} />
+      </div>
 
     </div>
   )
