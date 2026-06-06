@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useDraws } from './hooks/useDraws'
 import { analyzeDraws, analyzePositions, getTopPicks } from './utils/analysis'
 import {
@@ -205,6 +205,16 @@ function SaveBetButton({ numbers, stars }: { numbers: number[], stars: number[] 
   )
 }
 
+// ─── LoadingAnalysis ──────────────────────────────────────────────────────────
+function LoadingAnalysis() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: 'var(--t3)', gap: 10 }}>
+      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+      <span style={{ fontSize: 12, fontFamily: "'Space Mono',monospace" }}>Calculando análisis...</span>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { draws, loading, error, addDraw, deleteDraw, toggleExclude } = useDraws()
@@ -219,7 +229,6 @@ export default function App() {
   const [filterYear, setFilterYear] = useState<string>('all')
 
   const activeDraws = useMemo(() => draws.filter(d => !d.excluded), [draws])
-  const analysis  = useMemo(() => analyzeDraws(activeDraws), [activeDraws])
   const years = useMemo(() => {
     const ys = [...new Set(draws.map(d => d.date?.slice(0,4)).filter(Boolean))].sort().reverse()
     return ys
@@ -227,8 +236,24 @@ export default function App() {
   const filteredDraws = useMemo(() =>
     filterYear === 'all' ? draws : draws.filter(d => d.date?.startsWith(filterYear))
   , [draws, filterYear])
-  const positions = useMemo(() => analyzePositions(activeDraws), [activeDraws])
-  const topPicks  = useMemo(() => getTopPicks(activeDraws), [activeDraws])
+
+  // Análisis pesado diferido — no bloquea el hilo principal al cargar
+  const [analysis, setAnalysis]   = useState(() => analyzeDraws([]))
+  const [positions, setPositions] = useState(() => analyzePositions([]))
+  const [topPicks, setTopPicks]   = useState(() => [] as ReturnType<typeof getTopPicks>)
+  const [analysisReady, setAnalysisReady] = useState(false)
+
+  useEffect(() => {
+    if (activeDraws.length === 0) return
+    setAnalysisReady(false)
+    const timer = setTimeout(() => {
+      setAnalysis(analyzeDraws(activeDraws))
+      setPositions(analyzePositions(activeDraws))
+      setTopPicks(getTopPicks(activeDraws))
+      setAnalysisReady(true)
+    }, 80) // pequeño delay para que el UI responda primero
+    return () => clearTimeout(timer)
+  }, [activeDraws])
 
   const handleSubmit = async () => {
     if (formNumbers.length !== 5) { setFormError('Selecciona exactamente 5 números'); return }
@@ -529,10 +554,10 @@ export default function App() {
         )}
 
         {/* ── Stats ── */}
-        {!loading && tab === 'stats' && <StatsTab draws={activeDraws} />}
+        {!loading && tab === 'stats' && (!analysisReady ? <LoadingAnalysis /> : <StatsTab draws={activeDraws} />)}
 
         {/* ── Mis Boletos ── */}
-        {!loading && tab === 'bets' && <BetsTab />}
+        {tab === 'bets' && <BetsTab />}
 
         {/* ── Predicciones ── */}
         {!loading && tab === 'predictions' && (
