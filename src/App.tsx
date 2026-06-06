@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useDraws } from './hooks/useDraws'
-import { analyzeDraws, analyzePositions, getTopPicks } from './utils/analysis'
+import { analyzeDraws, analyzePositions } from './utils/analysis'
 import {
   PlusCircle, Trash2, TrendingUp, Star, BarChart3,
   ChevronDown, ChevronUp, Loader2, Flame, Snowflake,
@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import StatsTab from './components/StatsTab'
 import BetsTab from './components/BetsTab'
-import { useBets } from './hooks/useBets'
 
 // ─── Ball ─────────────────────────────────────────────────────────────────────
 function Ball({ n, type = 'number', size = 'md' }: {
@@ -183,29 +182,6 @@ function Logo() {
   )
 }
 
-// ─── SaveBetButton ────────────────────────────────────────────────────────────
-function SaveBetButton({ numbers, stars }: { numbers: number[], stars: number[] }) {
-  const { addBet } = useBets()
-  const [saved, setSaved] = useState(false)
-  const handleSave = async () => {
-    await addBet({ numbers, stars })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
-  return (
-    <button onClick={handleSave} style={{
-      padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-      fontSize: 10, fontFamily: "'Space Mono',monospace", fontWeight: 700,
-      background: saved ? 'rgba(78,203,160,0.15)' : 'rgba(91,127,255,0.15)',
-      color: saved ? 'var(--green)' : 'var(--blue)',
-      transition: 'all 0.2s', touchAction: 'manipulation',
-    }}>
-      {saved ? '✓ Guardado' : '+ Boleto'}
-    </button>
-  )
-}
-
-// ─── LoadingAnalysis ──────────────────────────────────────────────────────────
 function LoadingAnalysis() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: 'var(--t3)', gap: 10 }}>
@@ -240,7 +216,6 @@ export default function App() {
   // Análisis pesado diferido — no bloquea el hilo principal al cargar
   const [analysis, setAnalysis]   = useState(() => analyzeDraws([]))
   const [positions, setPositions] = useState(() => analyzePositions([]))
-  const [topPicks, setTopPicks]   = useState(() => [] as ReturnType<typeof getTopPicks>)
   const [analysisReady, setAnalysisReady] = useState(false)
 
   useEffect(() => {
@@ -249,7 +224,6 @@ export default function App() {
     const timer = setTimeout(() => {
       setAnalysis(analyzeDraws(activeDraws))
       setPositions(analyzePositions(activeDraws))
-      setTopPicks(getTopPicks(activeDraws))
       setAnalysisReady(true)
     }, 80) // pequeño delay para que el UI responda primero
     return () => clearTimeout(timer)
@@ -568,34 +542,7 @@ export default function App() {
                 <p style={{ fontSize: 13, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>Mínimo 3 sorteos para predecir</p>
               </div>
             ) : <>
-              {/* Top Picks */}
-              {topPicks.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 4 }}>
-                  <p style={{ fontSize: 11, color: 'var(--t2)', fontFamily: "'Space Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>⭐ Top 3 combinaciones sugeridas</p>
-                  {topPicks.map((pick, i) => (
-                    <div key={i} style={{ padding: '14px 16px', borderRadius: 14, background: i === 0 ? 'rgba(91,127,255,0.08)' : 'var(--bg3)', border: i === 0 ? '1px solid rgba(91,127,255,0.3)' : '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)' }}>{pick.label}</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 10, fontFamily: "'Space Mono',monospace", color: i === 0 ? 'var(--blue)' : 'var(--t3)', fontWeight: 700 }}>score {pick.score}</span>
-                          <SaveBetButton numbers={pick.numbers} stars={pick.stars} />
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                        {pick.numbers.map((n: number) => <Ball key={n} n={n} size="md" />)}
-                        <span style={{ color: 'var(--t3)', margin: '0 4px', fontSize: 16 }}>·</span>
-                        {pick.stars.map((n: number) => <Ball key={n} n={n} type="star" size="md" />)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(91,127,255,0.06)', border: '1px solid rgba(91,127,255,0.12)' }}>
-                <p style={{ fontSize: 10, color: 'var(--blue)', fontFamily: "'Space Mono',monospace", lineHeight: 1.6 }}>
-                  💡 Las predicciones de abajo (especialmente Markov) se actualizan con cada sorteo nuevo que registres.
-                </p>
-              </div>
-              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 9, background: 'rgba(240,180,41,0.06)', border: '1px solid rgba(240,180,41,0.12)' }}>
                 <AlertTriangle size={12} color="var(--gold)" style={{ flexShrink: 0 }} />
                 <p style={{ fontSize: 10, color: 'var(--gold)', fontFamily: "'Space Mono',monospace", lineHeight: 1.6 }}>
