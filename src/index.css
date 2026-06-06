@@ -46,3 +46,7 @@ body {
 .fu  { animation: fadeUp 0.3s ease both; }
 .fu2 { animation: fadeUp 0.3s 0.06s ease both; }
 .fu3 { animation: fadeUp 0.3s 0.12s ease both; }
+
+/* Mobile touch improvements */
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+* { -webkit-touch-callout: none; }

@@ -55,18 +55,20 @@ function NumberPicker({ max, count, selected, onChange, label }: {
           const disabled = !sel && selected.length >= count
           return (
             <button key={n} onClick={() => toggle(n)} disabled={disabled} style={{
-              width: 34, height: 34, borderRadius: '50%', border: 'none',
+              width: 40, height: 40, borderRadius: '50%', border: 'none',
               fontSize: 11, fontFamily: "'Space Mono',monospace", fontWeight: 700,
               cursor: disabled ? 'not-allowed' : 'pointer',
-              transition: 'all 0.12s',
-              transform: sel ? 'scale(1.15)' : 'scale(1)',
+              transition: 'all 0.1s',
+              transform: sel ? 'scale(1.1)' : 'scale(1)',
               background: sel
                 ? isStar ? 'var(--gold)' : 'var(--blue)'
-                : disabled ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
+                : disabled ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)',
               color: sel
                 ? isStar ? '#1a0e00' : '#fff'
                 : disabled ? 'var(--t3)' : 'var(--t2)',
-              boxShadow: sel ? (isStar ? '0 2px 8px rgba(240,180,41,0.4)' : '0 2px 8px rgba(91,127,255,0.4)') : 'none',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              userSelect: 'none',
             }}>{n < 10 ? `0${n}` : n}</button>
           )
         })}

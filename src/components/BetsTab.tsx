@@ -15,19 +15,21 @@ function NumberPicker({ max, count, selected, onChange }: {
     else if (selected.length < count) onChange([...selected, n].sort((a, b) => a - b))
   }
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
       {Array.from({ length: max }, (_, i) => i + 1).map(n => {
         const sel = selected.includes(n)
         const disabled = !sel && selected.length >= count
         return (
           <button key={n} onClick={() => toggle(n)} disabled={disabled} style={{
-            width: 34, height: 34, borderRadius: '50%', border: 'none',
+            width: 40, height: 40, borderRadius: '50%', border: 'none',
             fontSize: 11, fontFamily: "'Space Mono',monospace", fontWeight: 700,
             cursor: disabled ? 'not-allowed' : 'pointer',
-            transform: sel ? 'scale(1.12)' : 'scale(1)', transition: 'all 0.12s',
-            background: sel ? (isStar ? 'var(--gold)' : 'var(--blue)') : disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.07)',
+            transform: sel ? 'scale(1.1)' : 'scale(1)', transition: 'all 0.1s',
+            background: sel ? (isStar ? 'var(--gold)' : 'var(--blue)') : disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
             color: sel ? (isStar ? '#1a0e00' : '#fff') : disabled ? 'var(--t3)' : 'var(--t2)',
             touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
           }}>{n < 10 ? `0${n}` : n}</button>
         )
       })}
