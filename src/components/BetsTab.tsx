@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { useBets, Bet } from '../hooks/useBets'
+import { useBets, Bet, rankStrategies } from '../hooks/useBets'
+import { useDraws } from '../hooks/useDraws'
+import { analyzeDraws } from '../utils/analysis'
 import Ball from './Ball'
 import { PlusCircle, Trash2, CheckCircle, Loader2, X } from 'lucide-react'
 
@@ -232,6 +234,54 @@ function NewBetForm({ onClose }: { onClose: () => void }) {
   )
 }
 
+
+// ─── StrategyRanking ──────────────────────────────────────────────────────────
+function StrategyRanking() {
+  const { bets } = useBets()
+  const { draws } = useDraws()
+  const evaluated = bets.filter((b: any) => b.result)
+
+  const predictions = analyzeDraws(draws.filter((d:any) => !d.excluded)).predictions
+  const ranking = rankStrategies(bets as any, predictions)
+
+  if (evaluated.length === 0 || ranking.length === 0) return null
+
+  const max = ranking[0].totalHits || 1
+
+  return (
+    <div style={{ padding: '16px', borderRadius: 14, background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+      <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>🏆 Ranking de estrategias</p>
+      <p style={{ fontSize: 11, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginBottom: 14 }}>
+        Basado en cuántos números de tus boletos coinciden con cada estrategia
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {ranking.slice(0, 6).map((r, i) => {
+          const emoji = r.strategy.split(' ')[0]
+          const name = r.strategy.slice(r.strategy.indexOf(' ') + 1)
+          // pct: Math.round((r.totalHits / (evaluated.length * 7)) * 100)
+          const barW = Math.round((r.totalHits / (max || 1)) * 100)
+          return (
+            <div key={r.strategy} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", minWidth: 14, textAlign: 'right' }}>{i+1}</span>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 11, color: 'var(--t1)', marginBottom: 4, fontWeight: i===0?600:400, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</p>
+                <div style={{ height: 5, background: 'var(--bg4)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${barW}%`, borderRadius: 3, background: i===0?'var(--blue)':i===1?'var(--green)':'var(--t3)', transition:'width 0.5s' }} />
+                </div>
+              </div>
+              <span style={{ fontSize: 10, color: i===0?'var(--blue)':'var(--t3)', fontFamily:"'Space Mono',monospace", fontWeight:700, minWidth:30, textAlign:'right' }}>{r.totalHits}pts</span>
+            </div>
+          )
+        })}
+      </div>
+      <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily:"'Space Mono',monospace", marginTop:12 }}>
+        Evaluados: {evaluated.length} boleto{evaluated.length!==1?'s':''}
+      </p>
+    </div>
+  )
+}
+
 // ─── BetsTab ──────────────────────────────────────────────────────────────────
 export default function BetsTab() {
   const { bets, loading, deleteBet } = useBets()
@@ -262,6 +312,8 @@ export default function BetsTab() {
       </div>
 
       {showForm && <NewBetForm onClose={() => setShowForm(false)} />}
+
+      <StrategyRanking />
 
       {bets.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>

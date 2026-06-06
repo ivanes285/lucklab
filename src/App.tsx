@@ -285,19 +285,19 @@ export default function App() {
             </button>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, paddingBottom: 0 }}>
+          {/* Tabs — scrollable en mobile */}
+          <div style={{ display: 'flex', gap: 0, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '10px 16px',
+                padding: '10px 12px', flexShrink: 0,
                 background: 'none', border: 'none',
                 borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent',
                 color: tab === t.id ? 'var(--t1)' : 'var(--t3)',
-                fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
+                fontSize: 12, fontWeight: tab === t.id ? 600 : 400,
                 cursor: 'pointer', transition: 'all 0.15s',
                 WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
+                touchAction: 'manipulation', whiteSpace: 'nowrap',
               }}>
                 {t.icon} {t.label}
               </button>

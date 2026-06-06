@@ -68,3 +68,19 @@ function getPrize(nums: number, stars: number): string {
   if (nums === 2 && stars === 0) return '🎯 13º Premio'
   return '❌ Sin premio'
 }
+
+export function rankStrategies(bets: Bet[], predictions: Array<{strategy: string, numbers: number[], stars: number[]}>): Array<{strategy: string, totalHits: number, numHits: number, starHits: number, evaluated: number}> {
+  const evaluated = bets.filter(b => b.result)
+  if (!evaluated.length || !predictions.length) return []
+
+  return predictions.map(pred => {
+    let totalHits = 0, numHits = 0, starHits = 0, count = 0
+    evaluated.forEach(bet => {
+      if (!bet.result) return
+      const nHit = pred.numbers.filter(n => bet.numbers.includes(n)).length
+      const sHit = pred.stars.filter(s => bet.stars.includes(s)).length
+      numHits += nHit; starHits += sHit; totalHits += nHit + sHit; count++
+    })
+    return { strategy: pred.strategy, totalHits, numHits, starHits, evaluated: count }
+  }).sort((a,b) => b.totalHits - a.totalHits)
+}
