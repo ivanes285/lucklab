@@ -365,43 +365,15 @@ export interface TopPick {
 export function getTopPicks(draws: Draw[]): TopPick[] {
   if (draws.length < 3) return []
 
-  const numFreq = frequency(allNumbers(draws))
-  const starFreq = frequency(allStars(draws))
-  for (let i = 1; i <= 50; i++) if (!numFreq[i]) numFreq[i] = 0
-  for (let i = 1; i <= 12; i++) if (!starFreq[i]) starFreq[i] = 0
-
-  // Pick 1: Puros calientes
-  const hot = pickUnique(sortByFreq(numFreq), 5, 50)
-  const hotStars = pickUnique(sortByFreq(starFreq), 2, 12)
-
-  // Pick 2: Mezcla calientes + 2 fríos
-  const coldNums = sortByFreq(numFreq, true).filter(n => !hot.includes(n))
-  const mixNums = [...pickUnique(sortByFreq(numFreq), 3, 50), ...pickUnique(coldNums, 2, 50)]
-  const mixSorted = [...new Set(mixNums)].sort((a, b) => a - b).slice(0, 5)
-  while (mixSorted.length < 5) {
-    const r = Math.floor(Math.random() * 50) + 1
-    if (!mixSorted.includes(r)) mixSorted.push(r)
-  }
-
-  // Pick 3: Por posición — el más frecuente en cada posición
-  const pos = analyzePositions(draws)
-  const posNums = pos.numbers.map(p => p.top[0]?.n ?? Math.floor(Math.random() * 50) + 1)
-  const posNumsUnique = [...new Set(posNums)].sort((a, b) => a - b)
-  while (posNumsUnique.length < 5) {
-    const r = Math.floor(Math.random() * 50) + 1
-    if (!posNumsUnique.includes(r)) posNumsUnique.push(r)
-  }
-  const posStars = pos.stars.map(p => p.top[0]?.n ?? Math.floor(Math.random() * 12) + 1)
-  const posStarsUnique = [...new Set(posStars)].sort((a, b) => a - b)
-  while (posStarsUnique.length < 2) {
-    const r = Math.floor(Math.random() * 12) + 1
-    if (!posStarsUnique.includes(r)) posStarsUnique.push(r)
-  }
+  // Usa directamente los 3 algoritmos más sólidos en lugar de frecuencias simples
+  const hybrid  = hybridStrategy(draws)
+  const consensus = consensusStrategy(draws)
+  const markov  = markovStrategy(draws)
 
   return [
-    { label: '🔥 Combinación caliente',     numbers: hot,                              stars: hotStars,         score: 85 },
-    { label: '⚖️ Combinación equilibrada',  numbers: mixSorted.sort((a,b) => a-b),     stars: hotStars,         score: 72 },
-    { label: '📍 Por posición histórica',   numbers: posNumsUnique.slice(0,5),          stars: posStarsUnique.slice(0,2), score: 68 },
+    { label: '⚡ Híbrido Consenso+Posición', numbers: hybrid.numbers,    stars: hybrid.stars,    score: 72 },
+    { label: '🧠 Consenso Multi-estrategia', numbers: consensus.numbers, stars: consensus.stars, score: 70 },
+    { label: '🔗 Cadenas de Markov',         numbers: markov.numbers,    stars: markov.stars,    score: 61 },
   ]
 }
 
