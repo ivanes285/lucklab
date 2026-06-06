@@ -306,6 +306,7 @@ export function analyzeDraws(draws: Draw[]): AnalysisResult {
   const averageGap = gaps.length ? gaps.reduce((s, g) => s + g, 0) / gaps.length : 0
 
   const predictions: Prediction[] = draws.length >= 3 ? [
+    hybridStrategy(draws),
     consensusStrategy(draws),
     weightedStrategy(draws),
     markovStrategy(draws),
@@ -752,5 +753,71 @@ export function deltaPositionStrategy(draws: Draw[]): Prediction {
     numbers: numbers.sort((a,b)=>a-b), stars: stars.sort((a,b)=>a-b),
     confidence: 59,
     reasoning: `Analiza cómo evoluciona cada posición a lo largo del tiempo. ${posDesc}. El consenso de los 4 métodos define el siguiente estimado.`
+  }
+}
+
+// ─── Estrategia Híbrida: Consenso para números + Posición para estrellas ──────
+export function hybridStrategy(draws: Draw[]): Prediction {
+  if (draws.length < 5) return hotStrategy(draws)
+
+  // NÚMEROS: mismo consenso multi-estrategia (Markov x3 + Rachas x2 + Ponderación x1)
+  const strategies = [
+    markovStrategy(draws),
+    streakStrategy(draws),
+    weightedStrategy(draws),
+  ]
+  const votes: FrequencyMap = {}
+  const weights = [3, 2, 1]
+  strategies.forEach((pred, i) => {
+    const w = weights[i] ?? 1
+    pred.numbers.forEach(n => { votes[n] = (votes[n] || 0) + w })
+  })
+  // Desempate con delta por posición
+  const sorted = [...draws].sort((a, b) => a.date.localeCompare(b.date))
+  const posConsensus: number[] = []
+  for (let pos = 1; pos <= 5; pos++) {
+    const vals = sorted.map(d => [...d.numbers].sort((a,b)=>a-b)[pos-1]).filter((v): v is number => v !== undefined)
+    if (vals.length >= 5) {
+      const deltas: number[] = []
+      for (let i=1; i<vals.length; i++) deltas.push(vals[i]-vals[i-1])
+      const meanD = deltas.reduce((a,b)=>a+b,0)/deltas.length
+      const est = Math.min(50, Math.max(1, Math.round(vals[vals.length-1]+meanD)))
+      posConsensus.push(est)
+      votes[est] = (votes[est] || 0) + 1.5  // bonus por posición
+    }
+  }
+  const numbers = pickUnique(sortByFreq(votes), 5, 50)
+
+  // ESTRELLAS: puramente por posición histórica (lo que mejor funcionó)
+  const starVotes: FrequencyMap = {}
+  for (let pos = 1; pos <= 2; pos++) {
+    const vals = sorted.map(d => [...d.stars].sort((a,b)=>a-b)[pos-1]).filter((v): v is number => v !== undefined)
+    if (vals.length >= 5) {
+      const deltas: number[] = []
+      for (let i=1; i<vals.length; i++) deltas.push(vals[i]-vals[i-1])
+      const meanD = deltas.reduce((a,b)=>a+b,0)/deltas.length
+      const medD = (() => { const s=[...deltas].sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2===0?(s[m-1]+s[m])/2:s[m] })()
+      const rec5m = deltas.slice(-5).reduce((a,b)=>a+b,0)/Math.min(5,deltas.length)
+      const consensus = Math.min(12, Math.max(1, Math.round((
+        Math.min(12,Math.max(1,Math.round(vals[vals.length-1]+meanD))) +
+        Math.min(12,Math.max(1,Math.round(vals[vals.length-1]+medD))) +
+        Math.min(12,Math.max(1,Math.round(vals[vals.length-1]+rec5m)))
+      ) / 3)))
+      starVotes[consensus] = (starVotes[consensus] || 0) + 3
+    }
+  }
+  // Refuerzo con frecuencia ponderada de estrellas
+  const wStarFreq = weightedStarFrequency(draws)
+  for (let n=1; n<=12; n++) starVotes[n] = (starVotes[n]||0) + (wStarFreq[n]||0)*0.5
+  const stars = pickUnique(sortByFreq(starVotes), 2, 12)
+
+  const lastDraw = sorted[sorted.length-1]
+  return {
+    strategy: '⚡ Híbrido Consenso+Posición',
+    description: 'Combina Consenso Multi-estrategia (Markov+Rachas+Ponderación) para números con análisis Delta por posición para estrellas — cada componente usando lo que mejor funcionó.',
+    numbers: numbers.sort((a,b)=>a-b),
+    stars: stars.sort((a,b)=>a-b),
+    confidence: 72,
+    reasoning: `Números: consenso de Markov(x3)+Rachas(x2)+Ponderación(x1) con bonus de delta por posición. Estrellas: media+mediana+tendencia de los últimos saltos por posición — método que acertó las 2 estrellas en el sorteo más reciente. Último sorteo: [${lastDraw?.numbers?.join(',')}] · ⭐${lastDraw?.stars?.join(',')}`
   }
 }
