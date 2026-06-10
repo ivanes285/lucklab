@@ -102,8 +102,12 @@ export default function App() {
         return ra - rb
       })
     }
-    // Siempre ordena por confianza primero, lastDrawScore como desempate
+    // Consenso Multi-Estrategia siempre primero, luego por confianza
     return [...strategies].sort((a, b) => {
+      const aIsConsensus = a.strategy.includes('Consenso Multi')
+      const bIsConsensus = b.strategy.includes('Consenso Multi')
+      if (aIsConsensus) return -1
+      if (bIsConsensus) return 1
       if (b.confidence !== a.confidence) return b.confidence - a.confidence
       const sa = lastDrawScores[a.strategy] ?? 0
       const sb = lastDrawScores[b.strategy] ?? 0
