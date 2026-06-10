@@ -296,6 +296,46 @@ export default function App() {
                           <span style={{ color: 'var(--t3)', margin: '0 5px', fontSize: 18 }}>·</span>
                           {pred.stars.map(n=><Ball key={n} n={n} type="star" size="md"/>)}
                         </div>
+                        {/* Comparación vs último sorteo */}
+                        {(() => {
+                          const sortedD = [...draws].sort((a,b)=>(b.date??'').localeCompare(a.date??''))
+                          const last = sortedD[0]
+                          if (!last) return null
+                          const numHits = pred.numbers.filter(n => last.numbers.includes(n))
+                          const starHits = pred.stars.filter(s => last.stars.includes(s))
+                          const total = numHits.length + starHits.length
+                          const color = total >= 3 ? 'var(--green)' : total >= 2 ? 'var(--gold)' : 'var(--t3)'
+                          return (
+                            <div style={{ padding: '12px 14px', borderRadius: 10, background: total>=2?`rgba(${total>=3?'78,203,160':'240,180,41'},0.07)`:'var(--bg4)', border: `1px solid ${total>=3?'rgba(78,203,160,0.25)':total>=2?'rgba(240,180,41,0.25)':'var(--border)'}`, marginBottom: 10 }}>
+                              <p style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 8 }}>
+                                vs último sorteo ({last.date}) — {total} acierto{total!==1?'s':''}
+                              </p>
+                              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+                                <span style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", minWidth: 60 }}>Resultado:</span>
+                                {last.numbers.map(n => (
+                                  <span key={n} style={{ width: 30, height: 30, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: "'Space Mono',monospace", fontWeight: 700,
+                                    background: numHits.includes(n) ? 'var(--blue)' : 'var(--bg3)',
+                                    color: numHits.includes(n) ? '#fff' : 'var(--t3)',
+                                    border: numHits.includes(n) ? 'none' : '1px solid var(--border)',
+                                    boxShadow: numHits.includes(n) ? '0 0 8px rgba(91,127,255,0.5)' : 'none',
+                                  }}>{n<10?`0${n}`:n}</span>
+                                ))}
+                                <span style={{ color: 'var(--t3)', margin: '0 3px' }}>·</span>
+                                {last.stars.map(n => (
+                                  <span key={n} style={{ width: 30, height: 30, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: "'Space Mono',monospace", fontWeight: 700,
+                                    background: starHits.includes(n) ? 'var(--gold)' : 'var(--bg3)',
+                                    color: starHits.includes(n) ? '#1a0e00' : 'var(--t3)',
+                                    border: starHits.includes(n) ? 'none' : '1px solid var(--border)',
+                                    boxShadow: starHits.includes(n) ? '0 0 8px rgba(240,180,41,0.5)' : 'none',
+                                  }}>{n<10?`0${n}`:n}</span>
+                                ))}
+                              </div>
+                              <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace" }}>
+                                {numHits.length} número{numHits.length!==1?'s':''} acertado{numHits.length!==1?'s':''}{numHits.length>0?` (${numHits.join(', ')})`:''} · {starHits.length} estrella{starHits.length!==1?'s':''}{starHits.length>0?` (${starHits.join(', ')})`:' (ninguna)'}
+                              </p>
+                            </div>
+                          )
+                        })()}
                         <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
                           <p style={{ fontSize: 11, color: 'var(--t2)', fontFamily: "'Space Mono',monospace", lineHeight: 1.7 }}>{pred.reasoning}</p>
                         </div>
