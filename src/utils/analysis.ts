@@ -793,3 +793,83 @@ export function hybridStrategy(draws: Draw[]): Prediction {
     reasoning: `Números: consenso de Markov(x3)+Rachas(x2)+Ponderación(x1) con bonus de delta por posición. Estrellas: media+mediana+tendencia de los últimos saltos por posición — método que acertó las 2 estrellas en el sorteo más reciente. Último sorteo: [${lastDraw?.numbers?.join(',')}] · ⭐${lastDraw?.stars?.join(',')}`
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MÉTODOS REFINADOS v2 — evaluación contra sorteos reales
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Evalúa una predicción contra un resultado real
+export function scorePrediction(
+  pred: { numbers: number[], stars: number[] },
+  actual: { numbers: number[], stars: number[] }
+): { numHits: number, starHits: number, total: number } {
+  const numHits = pred.numbers.filter(n => actual.numbers.includes(n)).length
+  const starHits = pred.stars.filter(s => actual.stars.includes(s)).length
+  return { numHits, starHits, total: numHits + starHits }
+}
+
+// Método "due numbers" — números estadísticamente atrasados (ley de grandes números)
+export function dueStrategy(draws: Draw[]): Prediction {
+  const sorted = [...draws].sort((a,b)=>a.date.localeCompare(b.date))
+  const expected = (sorted.length * 5) / 50  // frecuencia esperada por número
+  const freq = frequency(allNumbers(draws))
+  for (let i=1;i<=50;i++) if(!freq[i]) freq[i]=0
+
+  // Score = qué tan por debajo de lo esperado está cada número
+  const deficit: FrequencyMap = {}
+  for (let n=1;n<=50;n++) deficit[n] = expected - (freq[n]||0)
+
+  // Combina déficit con ausencia reciente
+  const lastSeen: Record<number,number> = {}
+  sorted.forEach((d,i) => d.numbers.forEach(n => { lastSeen[n]=i }))
+  for (let n=1;n<=50;n++) {
+    const absence = sorted.length - 1 - (lastSeen[n] ?? -1)
+    deficit[n] = (deficit[n] * 0.5) + (absence * 0.5)
+  }
+
+  const numbers = pickUnique(sortByFreq(deficit), 5, 50)
+  const starFreq = frequency(allStars(draws))
+  for (let i=1;i<=12;i++) if(!starFreq[i]) starFreq[i]=0
+  const starExpected = (sorted.length*2)/12
+  const starDeficit: FrequencyMap = {}
+  for (let n=1;n<=12;n++) starDeficit[n] = starExpected - (starFreq[n]||0)
+  const stars = pickUnique(sortByFreq(starDeficit), 2, 12)
+
+  return {
+    strategy: '⏳ Números Atrasados',
+    description: 'Números que han salido menos de lo estadísticamente esperado y llevan más tiempo ausentes (ley de grandes números).',
+    numbers, stars, confidence: 55,
+    reasoning: `Combina déficit estadístico (esperado ${expected.toFixed(1)} apariciones por número) con tiempo de ausencia. Favorece números "que se deben".`
+  }
+}
+
+// Método de ventana corta — solo últimos 30 sorteos
+export function shortWindowStrategy(draws: Draw[]): Prediction {
+  const sorted = [...draws].sort((a,b)=>b.date.localeCompare(a.date))
+  const window = sorted.slice(0, Math.min(30, sorted.length))
+  const numFreq = frequency(window.flatMap(d=>d.numbers))
+  const starFreq = frequency(window.flatMap(d=>d.stars))
+  const numbers = pickUnique(sortByFreq(numFreq), 5, 50)
+  const stars = pickUnique(sortByFreq(starFreq), 2, 12)
+  return {
+    strategy: '🎯 Ventana Corta (30)',
+    description: 'Solo analiza los últimos 30 sorteos — captura tendencias muy recientes ignorando historia antigua.',
+    numbers, stars, confidence: 58,
+    reasoning: `Usa únicamente los 30 sorteos más recientes. Más sensible a rachas actuales que el análisis histórico completo.`
+  }
+}
+
+// Lista completa de estrategias para evaluación y ranking
+export function getAllStrategies(draws: Draw[]): Prediction[] {
+  if (draws.length < 5) return []
+  return [
+    hybridStrategy(draws),
+    consensusStrategy(draws),
+    markovStrategy(draws),
+    streakStrategy(draws),
+    shortWindowStrategy(draws),
+    weightedStrategy(draws),
+    dueStrategy(draws),
+    deltaPositionStrategy(draws),
+  ]
+}
