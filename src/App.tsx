@@ -106,10 +106,11 @@ export default function App() {
       return [...strategies].sort((a, b) => {
         const sa = lastDrawScores[a.strategy] ?? -1
         const sb = lastDrawScores[b.strategy] ?? -1
-        return sb - sa
+        if (sb !== sa) return sb - sa
+        return b.confidence - a.confidence
       })
     }
-    return strategies
+    return [...strategies].sort((a, b) => b.confidence - a.confidence)
   }, [strategies, ranking, lastDrawScores])
 
   const ready5 = formNums.length === 5 && formStars.length === 2
@@ -276,10 +277,10 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
                           {pred.numbers.map(n=><Ball key={n} n={n} size="sm"/>)}
-                          <span style={{color:'var(--t3)',margin:'0 2px',alignSelf:'center'}}>·</span>
+                          <span style={{color:'var(--t3)',margin:'0 2px'}}>·</span>
                           {pred.stars.map(n=><Ball key={n} n={n} type="star" size="sm"/>)}
                         </div>
                         {expanded===i?<ChevronUp size={15} color="var(--t3)"/>:<ChevronDown size={15} color="var(--t3)"/>}
