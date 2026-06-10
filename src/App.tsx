@@ -102,15 +102,13 @@ export default function App() {
         return ra - rb
       })
     }
-    if (Object.keys(lastDrawScores).length > 0) {
-      return [...strategies].sort((a, b) => {
-        const sa = lastDrawScores[a.strategy] ?? -1
-        const sb = lastDrawScores[b.strategy] ?? -1
-        if (sb !== sa) return sb - sa
-        return b.confidence - a.confidence
-      })
-    }
-    return [...strategies].sort((a, b) => b.confidence - a.confidence)
+    // Siempre ordena por confianza primero, lastDrawScore como desempate
+    return [...strategies].sort((a, b) => {
+      if (b.confidence !== a.confidence) return b.confidence - a.confidence
+      const sa = lastDrawScores[a.strategy] ?? 0
+      const sb = lastDrawScores[b.strategy] ?? 0
+      return sb - sa
+    })
   }, [strategies, ranking, lastDrawScores])
 
   const ready5 = formNums.length === 5 && formStars.length === 2
