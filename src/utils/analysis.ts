@@ -993,12 +993,22 @@ export function proximityStrategy(draws: Draw[]): Prediction {
   const lastStr = lastDraw.numbers.join(', ')
   const prevStr = prevDraw?.numbers.join(', ') || '?'
 
+  // Rangos por posición: para cada posición 1-5, calcula rango sugerido
+  const rangeByPos = [1,2,3,4,5].map(pos => {
+    const posVals = sorted.map(d => [...d.numbers].sort((a,b)=>a-b)[pos-1]).filter((v): v is number => v !== undefined)
+    const mean = posVals.reduce((a,b)=>a+b,0)/posVals.length
+    const std = Math.sqrt(posVals.reduce((s,v)=>s+(v-mean)**2,0)/posVals.length)
+    const lo = Math.max(1, Math.round(mean - std))
+    const hi = Math.min(50, Math.round(mean + std))
+    return `P${pos}: ${lo}-${hi}`
+  }).join(' | ')
+
   return {
     strategy: '🎯 Proximidad Gaussiana',
-    description: 'Función gaussiana de densidad: pondera números según su cercanía histórica a los del sorteo anterior. Minimiza dispersión en lugar de intentar predecir exactos.',
+    description: 'Función gaussiana: pondera números según cercanía al último sorteo. Minimiza dispersión en lugar de predecir exactos.',
     numbers: numbers.sort((a,b)=>a-b),
     stars: stars.sort((a,b)=>a-b),
     confidence: 60,
-    reasoning: `Último sorteo: [${lastStr}]. Previo: [${prevStr}]. Cada número recibe un score proporcional a exp(-d²/128) respecto a los del último sorteo. Dispersión media histórica (últimos 30): ~${avgDist} pts vs ~18 pts del azar puro.`
+    reasoning: `Dispersión media histórica ~${avgDist} pts (azar puro ~18 pts). Rangos sugeridos por posición: ${rangeByPos}. Último: [${lastStr}] · Previo: [${prevStr}]`
   }
 }

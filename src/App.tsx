@@ -62,13 +62,28 @@ export default function App() {
 
   // Análisis diferido
   const [strategies, setStrategies] = useState<ReturnType<typeof getAllStrategies>>([])
+  const [lastDrawScores, setLastDrawScores] = useState<Record<string,number>>({})
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     if (draws.length === 0) { setReady(true); return }
     setReady(false)
     const t = setTimeout(() => {
-      setStrategies(getAllStrategies(draws))
+      const allStrats = getAllStrategies(draws)
+      setStrategies(allStrats)
+      // Evalúa cada estrategia contra el último sorteo registrado
+      if (draws.length >= 2) {
+        const sortedDraws = [...draws].sort((a,b)=>(b.date??'').localeCompare(a.date??''))
+        const lastActual = { numbers: sortedDraws[0].numbers, stars: sortedDraws[0].stars }
+        // Calcula con datos sin el último sorteo
+        const prevStrats = getAllStrategies(sortedDraws.slice(1))
+        const scores: Record<string,number> = {}
+        for (const s of prevStrats) {
+          const sc = scorePrediction(s, lastActual)
+          scores[s.strategy] = sc.total
+        }
+        setLastDrawScores(scores)
+      }
       setReady(true)
     }, 60)
     return () => clearTimeout(t)
@@ -77,16 +92,25 @@ export default function App() {
   // Solo sorteos 2026 en pantalla
   const draws2026 = useMemo(() => draws.filter(d => d.date?.startsWith('2026')), [draws])
 
-  // Reordena estrategias según ranking histórico
+  // Reordena: ranking histórico > score último sorteo > orden default
   const orderedStrategies = useMemo(() => {
-    if (ranking.length === 0) return strategies
-    const rankMap = new Map(ranking.map((r, i) => [r.strategy, i]))
-    return [...strategies].sort((a, b) => {
-      const ra = rankMap.has(a.strategy) ? rankMap.get(a.strategy)! : 999
-      const rb = rankMap.has(b.strategy) ? rankMap.get(b.strategy)! : 999
-      return ra - rb
-    })
-  }, [strategies, ranking])
+    if (ranking.length > 0) {
+      const rankMap = new Map(ranking.map((r, i) => [r.strategy, i]))
+      return [...strategies].sort((a, b) => {
+        const ra = rankMap.has(a.strategy) ? rankMap.get(a.strategy)! : 999
+        const rb = rankMap.has(b.strategy) ? rankMap.get(b.strategy)! : 999
+        return ra - rb
+      })
+    }
+    if (Object.keys(lastDrawScores).length > 0) {
+      return [...strategies].sort((a, b) => {
+        const sa = lastDrawScores[a.strategy] ?? -1
+        const sb = lastDrawScores[b.strategy] ?? -1
+        return sb - sa
+      })
+    }
+    return strategies
+  }, [strategies, ranking, lastDrawScores])
 
   const ready5 = formNums.length === 5 && formStars.length === 2
 
@@ -237,15 +261,27 @@ export default function App() {
                           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {pred.strategy.slice(pred.strategy.indexOf(' ')+1)}
                           </p>
-                          {rankInfo && (
-                            <p style={{ fontSize: 10, color: 'var(--t3)', fontFamily: "'Space Mono',monospace", marginTop: 2 }}>
-                              prom {rankInfo.avg.toFixed(1)} aciertos · mejor {rankInfo.best}
-                            </p>
-                          )}
+                          <div style={{display:'flex',alignItems:'center',gap:6,marginTop:3,flexWrap:'wrap'}}>
+                            <div style={{height:3,width:60,background:'var(--bg5)',borderRadius:3,overflow:'hidden'}}>
+                              <div style={{height:'100%',width:`${pred.confidence}%`,background:pred.confidence>=65?'var(--green)':pred.confidence>=55?'var(--gold)':'var(--t3)',borderRadius:3}}/>
+                            </div>
+                            <span style={{fontSize:10,color:pred.confidence>=65?'var(--green)':pred.confidence>=55?'var(--gold)':'var(--t3)',fontFamily:"'Space Mono',monospace",fontWeight:700}}>{pred.confidence}%</span>
+                            {rankInfo && <span style={{fontSize:10,color:'var(--t3)',fontFamily:"'Space Mono',monospace"}}>· prom {rankInfo.avg.toFixed(1)}</span>}
+                            {!rankInfo && lastDrawScores[pred.strategy] !== undefined && (
+                              <span style={{fontSize:10,fontFamily:"'Space Mono',monospace",fontWeight:700,
+                                color:lastDrawScores[pred.strategy]>=3?'var(--green)':lastDrawScores[pred.strategy]>=2?'var(--gold)':'var(--t3)'}}>
+                                · último sorteo: {lastDrawScores[pred.strategy]} acierto{lastDrawScores[pred.strategy]!==1?'s':''}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ display: 'flex', gap: 3 }}>{pred.numbers.map(n=><Ball key={n} n={n} size="sm"/>)}</div>
+                        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {pred.numbers.map(n=><Ball key={n} n={n} size="sm"/>)}
+                          <span style={{color:'var(--t3)',margin:'0 2px',alignSelf:'center'}}>·</span>
+                          {pred.stars.map(n=><Ball key={n} n={n} type="star" size="sm"/>)}
+                        </div>
                         {expanded===i?<ChevronUp size={15} color="var(--t3)"/>:<ChevronDown size={15} color="var(--t3)"/>}
                       </div>
                     </button>
